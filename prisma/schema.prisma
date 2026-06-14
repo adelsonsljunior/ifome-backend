@@ -1,0 +1,18 @@
+// Fonte da verdade do banco. Mudou o schema -> crie uma migration.
+// Docs: https://pris.ly/d/prisma-schema
+
+
+// IDs: UUID v7 gerado pelo banco (PostgreSQL 18). A aplicação nunca gera o id.
+//   id String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
