@@ -16,3 +16,283 @@ datasource db {
   provider = "postgresql"
 }
 
+
+// Enums
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum DietaryType {
+  vegetarian
+  vegan
+  glutenFree
+  lactoseFree
+  spicy
+}
+
+enum DishCategory {
+  base
+  protein
+  proteinVeg // vegetarian/vegan protein (proteina_v)
+  salad
+  side // acompanhamento
+  dessert
+  beverage
+}
+
+enum MealPeriod {
+  breakfast
+  lunch
+  dinner
+}
+
+enum ConfirmationType {
+  standard // padrao
+  adapted // adaptada
+}
+
+enum StockStatus {
+  ok
+  low
+  critical
+}
+
+enum StockMovementType {
+  inbound // entrada
+  outbound // saída (consumo)
+  adjustment // ajuste / contagem
+}
+
+enum AlertLevel {
+  critical // crit
+  warning // warn
+  info
+}
+
+enum AlertType {
+  criticalStock // estoque_critico
+  lowStock // estoque_baixo
+  confirmationsPeak // pico_confirmacoes
+  other // outro
+}
+
+enum NotificationIcon {
+  utensils
+  alert
+  bell
+  checkCircle
+  calendar
+}
+
+// Users & dietary restrictions
+
+model User {
+  id         String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email      String   @unique
+  password   String
+  name       String
+  enrollment String   @unique
+  role       Role
+  campus     String
+  course     String // students: course name | admins: "RU Management"
+  phone      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  dietaryRestrictions DietaryRestriction[]
+  confirmations       Confirmation[]
+  mealHistory         MealHistory[]
+  notifications       Notification[]
+  stockMovements      StockMovement[] // movimentos de estoque registrados (admin)
+
+  @@map("users")
+}
+
+model DietaryRestriction {
+  id        String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId    String      @db.Uuid
+  type      DietaryType
+  createdAt DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type]) // a user can't repeat the same restriction
+  @@map("dietary_restrictions")
+}
+
+// Dishes catalog & dish-level restrictions
+
+model Dish {
+  id          String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name        String
+  description String
+  category    DishCategory
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  restrictions DishRestriction[]
+  meals        MealDish[]
+
+  @@map("dishes")
+}
+
+model DishRestriction {
+  id     String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  dishId String      @db.Uuid
+  type   DietaryType
+
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([dishId, type])
+  @@map("dish_restrictions")
+}
+
+// Meals (daily menus) & meal-dish association
+
+model Meal {
+  id        String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  date      DateTime   @db.Date
+  period    MealPeriod
+  startTime DateTime   @db.Time
+  endTime   DateTime   @db.Time
+  capacity  Int
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // "confirmados" is NOT stored — derive it from the confirmations relation:
+  //   prisma.meal.findMany({ include: { _count: { select: { confirmations: { where: { canceledAt: null } } } } } })
+  dishes        MealDish[]
+  confirmations Confirmation[]
+
+  @@unique([date, period]) // one menu per period per day
+  @@map("meals")
+}
+
+model MealDish {
+  id     String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  mealId String @db.Uuid
+  dishId String @db.Uuid
+  order  Int // display order
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Restrict)
+
+  @@unique([mealId, dishId]) // a dish appears at most once per meal
+  @@map("meal_dishes")
+}
+
+// Meal confirmations & history
+
+model Confirmation {
+  id          String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId      String           @db.Uuid
+  mealId      String           @db.Uuid
+  type        ConfirmationType @default(standard)
+  confirmedAt DateTime         @default(now())
+  canceledAt  DateTime? // NULL = active confirmation
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mealId]) // uniqueness user <-> meal (re-confirm = update existing row)
+  @@map("confirmations")
+}
+
+model MealHistory {
+  id         String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId     String     @db.Uuid
+  date       DateTime   @db.Date
+  period     MealPeriod
+  dish       String
+  rating     Int? // 1-5 (enforce range with a CHECK constraint or app validation)
+  recordedAt DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("meal_history")
+}
+
+// Stock: items & movements
+
+model StockItem {
+  id              String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name            String
+  category        String // Grains | Proteins | Produce | Supplies | etc
+  currentQuantity Decimal     @db.Decimal(12, 3)
+  minQuantity     Decimal     @db.Decimal(12, 3)
+  maxQuantity     Decimal     @db.Decimal(12, 3)
+  unit            String // kg | L | un | etc
+  status          StockStatus @default(dbgenerated("'ok'::\"StockStatus\"")) // calculado pelo trigger trg_set_stock_status (BEFORE INSERT/UPDATE) — não escreva direto
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  movements StockMovement[]
+
+  @@map("stock_items")
+}
+
+model StockMovement {
+  id          String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  stockItemId String            @db.Uuid
+  type        StockMovementType
+  quantity    Decimal           @db.Decimal(12, 3)
+  reason      String?
+  createdById String?           @db.Uuid // admin que registrou o movimento
+  createdAt   DateTime          @default(now())
+
+  stockItem StockItem @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([stockItemId, createdAt])
+  @@map("stock_movements")
+}
+
+// Alerts & notifications
+
+model Alert {
+  id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  level        AlertLevel
+  title        String
+  body         String
+  type         AlertType
+  relatedId    String?    @db.Uuid // polymorphic ref (e.g. a stock item) — no FK enforced
+  readByAdmins String[]   @db.Uuid // admin user IDs who read it (see note: a join table is cleaner)
+  createdAt    DateTime   @default(now())
+  resolvedAt   DateTime?
+
+  @@index([type, createdAt])
+  @@map("alerts")
+}
+
+model Notification {
+  id        String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId    String           @db.Uuid
+  icon      NotificationIcon
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  readAt    DateTime? // NULL until read
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+// Demand analytics
+
+model DemandAnalytics {
+  id                String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  date              DateTime   @db.Date
+  period            MealPeriod // lunch | dinner in practice
+  confirmationCount Int
+  createdAt         DateTime   @default(now())
+
+  @@unique([date, period])
+  @@map("demand_analytics")
+}
