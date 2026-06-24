@@ -1,4 +1,4 @@
-import { UserProps, UserRole } from './props';
+import { DietaryType, UserProps, UserRole } from './props';
 
 // Entidade de domínio do usuário. TypeScript puro: sem Nest, sem Prisma.
 // Construída somente via UserBuilder; `create` é o factory chamado pelo builder.
@@ -45,6 +45,11 @@ export class User {
 
   get phone(): string {
     return this.props.phone;
+  }
+
+  // Restrições alimentares; vazio quando a projeção não as carrega.
+  get dietaryRestrictions(): DietaryType[] {
+    return this.props.dietaryRestrictions ?? [];
   }
 
   get createdAt(): Date | undefined {

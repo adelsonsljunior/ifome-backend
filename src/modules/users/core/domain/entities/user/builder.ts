@@ -1,5 +1,5 @@
 import { User } from './entity';
-import { UserProps, UserRole } from './props';
+import { DietaryType, UserProps, UserRole } from './props';
 import { UserMessage } from '../../../message/user.message';
 import { InvalidEntityException } from '../../../../../../shared/domain/exceptions/invalid-entity.exception';
 
@@ -55,6 +55,11 @@ export class UserBuilder {
     return this;
   }
 
+  public withDietaryRestrictions(dietaryRestrictions?: DietaryType[]): this {
+    this.props.dietaryRestrictions = dietaryRestrictions;
+    return this;
+  }
+
   public withCreatedAt(createdAt: Date): this {
     this.props.createdAt = createdAt;
     return this;
@@ -94,6 +99,7 @@ export class UserBuilder {
       campus: this.props.campus,
       course: this.props.course,
       phone: this.props.phone,
+      dietaryRestrictions: this.props.dietaryRestrictions,
       createdAt: this.props.createdAt,
       updatedAt: this.props.updatedAt,
     });

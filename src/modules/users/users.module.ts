@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
 import { USERS_USECASES } from './core/interfaces/primary/user.use-cases.interface';
 import { USER_REPOSITORY } from './core/interfaces/secondary/user.repository.interface';
 import { UserRepository } from './infra/database/repository/user.repository';
 
 @Module({
+  controllers: [UsersController],
   providers: [
     UsersService,
     { provide: USERS_USECASES, useExisting: UsersService },
