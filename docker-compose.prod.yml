@@ -1,0 +1,113 @@
+# Deploy de produção — imagem construída no próprio host (docker compose --build),
+# exposto pelo Traefik em https://ifome.juniorslab.online/api.
+#
+# As variáveis vêm de um arquivo .env ao lado deste compose (escrito pelo Jenkins
+# a partir da credencial secret file `ifome-envs`):
+#   POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB / JWT_SECRET
+#
+# Redes:
+#   traefik  — externa, só a API a usa (ingress HTTPS).
+#   internal — interna (sem saída pra fora), liga API/migrate/seed ao Postgres.
+
+# Build compartilhado: os três serviços de app usam a MESMA imagem, construída
+# uma vez a partir do Dockerfile local.
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: ifome-backend:latest
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: ifome-postgres
+    restart: always
+    networks:
+      - internal
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ifome}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-ifome}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ifome} -d ${POSTGRES_DB:-ifome}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Migração one-shot: roda `prisma migrate deploy` e encerra. Os serviços
+  # seguintes só sobem depois que esta termina com sucesso.
+  migrate:
+    <<: *app
+    container_name: ifome-migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-ifome}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ifome}?schema=public"
+    # ENTRYPOINT da imagem é `node`; aqui passamos o CLI do Prisma como argumentos.
+    command: ["node_modules/prisma/build/index.js", "migrate", "deploy"]
+
+  # Seed one-shot: roda o seed compilado (idempotente, upsert por email) após a
+  # migração. A API só sobe depois que este termina com sucesso.
+  seed:
+    <<: *app
+    container_name: ifome-seed
+    restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-ifome}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ifome}?schema=public"
+    # Seed compilado (dist/prisma/seed.js); ENTRYPOINT da imagem já é `node`.
+    command: ["dist/prisma/seed.js"]
+
+  api:
+    <<: *app
+    container_name: ifome-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed:
+        condition: service_completed_successfully
+    networks:
+      - traefik
+      - internal
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-ifome}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ifome}?schema=public"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      # Router HTTPS (443).
+      - "traefik.http.routers.ifome.rule=Host(`ifome.juniorslab.online`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.ifome.entrypoints=websecure"
+      - "traefik.http.routers.ifome.service=ifome"
+      - "traefik.http.routers.ifome.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ifome.loadbalancer.server.port=8000"
+      # Router HTTP (80) que redireciona tudo pra HTTPS.
+      - "traefik.http.routers.ifome-web.rule=Host(`ifome.juniorslab.online`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.ifome-web.entrypoints=web"
+      - "traefik.http.routers.ifome-web.middlewares=ifome-redirect"
+      - "traefik.http.middlewares.ifome-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.ifome-redirect.redirectscheme.permanent=true"
+
+networks:
+  traefik:
+    external: true
+  internal:
+    internal: true
+
+volumes:
+  postgres_data:

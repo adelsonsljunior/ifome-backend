@@ -6,10 +6,14 @@
 //   id String @id @default(dbgenerated("uuidv7()")) @db.Uuid
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
-  runtime      = "nodejs"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  runtime             = "nodejs"
+  // Emite imports com extensão .js para que a saída compilada (dist) rode no
+  // Node em produção. Sem isso, o client gerado importa './...ts' e quebra fora
+  // de um runtime TS (ts-node/tsx).
+  importFileExtension = "js"
 }
 
 datasource db {
