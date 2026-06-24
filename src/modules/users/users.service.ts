@@ -67,10 +67,19 @@ export class UsersService implements IUsersUseCases {
   }
 
   async getRecentConfirmations(
-    limit: number,
+    page: number,
+    pageSize: number,
     order: RecentConfirmationsOrder,
-  ): Promise<RecentConfirmationReadModel[]> {
-    this.logger.log(`Getting ${limit} recent confirmations (order: ${order})`);
-    return this.userRepository.findRecentConfirmations(limit, order);
+  ): Promise<PaginationReadModel<RecentConfirmationReadModel>> {
+    this.logger.log(
+      `Getting recent confirmations (page ${page}, order: ${order})`,
+    );
+    const skip = (page - 1) * pageSize;
+    const { rows, total } = await this.userRepository.findRecentConfirmations(
+      skip,
+      pageSize,
+      order,
+    );
+    return PaginationReadModel.create(rows, page, pageSize, total);
   }
 }

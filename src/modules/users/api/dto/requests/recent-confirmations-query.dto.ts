@@ -1,35 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsOptional } from 'class-validator';
+import { PaginationQueryDto } from '../../../../../common/dto/requests/pagination-query.dto';
 import type { RecentConfirmationsOrder } from '../../../core/interfaces/primary/user.use-cases.interface';
 
-export const DEFAULT_RECENT_LIMIT = 6;
-export const MAX_RECENT_LIMIT = 50;
-const ORDERS: RecentConfirmationsOrder[] = ['recente'];
+const SORT_OPTIONS: RecentConfirmationsOrder[] = ['newest', 'oldest'];
 
-// Query do painel admin de confirmações recentes (top-N, não paginação completa).
-// `ordenar_por` mantém o snake_case do contrato externo (?ordenar_por=recente)
-// para casar com o ValidationPipe (whitelist + forbidNonWhitelisted).
-export class RecentConfirmationsQueryDto {
+// Query paginada do painel admin de confirmações recentes (page/pageSize herdados).
+export class RecentConfirmationsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
-    example: 6,
-    minimum: 1,
-    maximum: MAX_RECENT_LIMIT,
-    default: DEFAULT_RECENT_LIMIT,
+    enum: SORT_OPTIONS,
+    default: 'newest',
+    description:
+      'Ordenação por data da confirmação: "newest" (mais recentes) ou "oldest" (mais antigas).',
   })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(MAX_RECENT_LIMIT)
-  limit: number = DEFAULT_RECENT_LIMIT;
-
-  @ApiPropertyOptional({
-    enum: ORDERS,
-    default: 'recente',
-    description: 'Ordenação. Atualmente só "recente" (mais novas primeiro).',
-  })
-  @IsOptional()
-  @IsIn(ORDERS)
-  ordenar_por: RecentConfirmationsOrder = 'recente';
+  @IsIn(SORT_OPTIONS)
+  sort: RecentConfirmationsOrder = 'newest';
 }

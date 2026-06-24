@@ -77,4 +77,16 @@ export class UserApiMapper {
       confirmedAt: confirmation.confirmedAt.toISOString(),
     };
   }
+
+  static toRecentConfirmationPage(
+    page: PaginationReadModel<RecentConfirmationReadModel>,
+  ): PaginationResponseDto<RecentConfirmationResponseDto> {
+    return new PaginationResponseDto(
+      page.data.map((item) => this.toRecentConfirmationResponse(item)),
+      page.page,
+      page.pageSize,
+      page.total,
+      page.totalPages,
+    );
+  }
 }

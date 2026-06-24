@@ -11,8 +11,9 @@ export interface UpdateProfileData {
   restrictions?: DietaryType[];
 }
 
-// Ordenação aceita para confirmações recentes (painel admin).
-export type RecentConfirmationsOrder = 'recente';
+// Ordenação aceita para confirmações recentes (painel admin):
+// mais recentes (newest) ou mais antigas (oldest) primeiro.
+export type RecentConfirmationsOrder = 'newest' | 'oldest';
 
 // Porta de entrada: casos de uso de usuários (implementados pelo UsersService).
 export interface IUsersUseCases {
@@ -26,9 +27,10 @@ export interface IUsersUseCases {
     pageSize: number,
   ): Promise<PaginationReadModel<MealHistory>>;
   getRecentConfirmations(
-    limit: number,
+    page: number,
+    pageSize: number,
     order: RecentConfirmationsOrder,
-  ): Promise<RecentConfirmationReadModel[]>;
+  ): Promise<PaginationReadModel<RecentConfirmationReadModel>>;
 }
 
 export const USERS_USECASES: InjectionToken<IUsersUseCases> =

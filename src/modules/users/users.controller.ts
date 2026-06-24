@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Inject,
   Logger,
   Patch,
@@ -11,6 +13,7 @@ import {
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -59,19 +62,19 @@ export class UsersController {
   }
 
   @Patch('profile')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Atualiza telefone e/ou restrições do usuário' })
-  @ApiOkResponse({ type: UserProfileResponseDto })
+  @ApiNoContentResponse({ description: 'Perfil atualizado' })
   async updateProfile(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateProfileDto,
-  ): Promise<UserProfileResponseDto> {
+  ): Promise<void> {
     this.logger.log(`Updating profile for user ${user.id}`);
-    const profile = await this.usersUseCases.updateProfile(user.id, {
+    await this.usersUseCases.updateProfile(user.id, {
       phone: dto.phone,
       restrictions: dto.restrictions,
     });
-    return UserApiMapper.toProfileResponse(profile);
   }
 
   @Get('meal-history')
@@ -101,20 +104,18 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiOperation({
-    summary: 'Lista as confirmações de refeição mais recentes (admin)',
+    summary:
+      'Lista paginada das confirmações de refeição mais recentes (admin)',
   })
-  @ApiOkResponse({ type: RecentConfirmationResponseDto, isArray: true })
+  @ApiPaginatedResponse(RecentConfirmationResponseDto)
   @ApiForbiddenResponse({ description: 'Acesso restrito a administradores' })
-  async getRecentConfirmations(
-    @Query() query: RecentConfirmationsQueryDto,
-  ): Promise<RecentConfirmationResponseDto[]> {
-    this.logger.log(`Fetching ${query.limit} recent confirmations`);
-    const confirmations = await this.usersUseCases.getRecentConfirmations(
-      query.limit,
-      query.ordenar_por,
+  async getRecentConfirmations(@Query() query: RecentConfirmationsQueryDto) {
+    this.logger.log(`Fetching recent confirmations (page ${query.page})`);
+    const result = await this.usersUseCases.getRecentConfirmations(
+      query.page,
+      query.pageSize,
+      query.sort,
     );
-    return confirmations.map((confirmation) =>
-      UserApiMapper.toRecentConfirmationResponse(confirmation),
-    );
+    return UserApiMapper.toRecentConfirmationPage(result);
   }
 }

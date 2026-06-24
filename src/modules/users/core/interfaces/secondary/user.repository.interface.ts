@@ -25,9 +25,10 @@ export interface IUserRepository {
     take: number,
   ): Promise<PagedResult<MealHistory>>;
   findRecentConfirmations(
-    limit: number,
+    skip: number,
+    take: number,
     order: RecentConfirmationsOrder,
-  ): Promise<RecentConfirmationReadModel[]>;
+  ): Promise<PagedResult<RecentConfirmationReadModel>>;
 }
 
 export const USER_REPOSITORY: InjectionToken<IUserRepository> =

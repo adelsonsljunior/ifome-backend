@@ -123,25 +123,38 @@ export class UserRepository implements IUserRepository {
   }
 
   async findRecentConfirmations(
-    limit: number,
+    skip: number,
+    take: number,
     order: RecentConfirmationsOrder,
-  ): Promise<RecentConfirmationReadModel[]> {
-    // 'recente' é a única ordenação suportada hoje: mais novas primeiro.
-    const ORDER_BY = { recente: { confirmedAt: 'desc' } } as const;
-    const rows = await this.prisma.confirmation.findMany({
-      where: { canceledAt: null },
-      orderBy: ORDER_BY[order],
-      take: limit,
-      select: {
-        id: true,
-        userId: true,
-        type: true,
-        confirmedAt: true,
-        user: { select: { name: true, enrollment: true } },
-        meal: { select: { date: true, period: true } },
-      },
-    });
+  ): Promise<PagedResult<RecentConfirmationReadModel>> {
+    // newest = mais recentes primeiro; oldest = mais antigas primeiro.
+    const ORDER_BY = {
+      newest: { confirmedAt: 'desc' },
+      oldest: { confirmedAt: 'asc' },
+    } as const;
+    const where = { canceledAt: null };
 
-    return rows.map((row) => RecentConfirmationPrismaMapper.toReadModel(row));
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.confirmation.findMany({
+        where,
+        orderBy: ORDER_BY[order],
+        skip,
+        take,
+        select: {
+          id: true,
+          userId: true,
+          type: true,
+          confirmedAt: true,
+          user: { select: { name: true, enrollment: true } },
+          meal: { select: { date: true, period: true } },
+        },
+      }),
+      this.prisma.confirmation.count({ where }),
+    ]);
+
+    return {
+      rows: rows.map((row) => RecentConfirmationPrismaMapper.toReadModel(row)),
+      total,
+    };
   }
 }
