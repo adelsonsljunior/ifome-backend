@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { MealPeriod } from '../../../core/domain/entities/meal-history';
-import type { ConfirmationType } from '../../../core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
+import type {
+  ConfirmationType,
+  MealPeriod,
+} from '../../../core/domain/entities/confirmation';
 
 // DTO de saída de uma confirmação recente (painel admin).
 export class RecentConfirmationResponseDto {

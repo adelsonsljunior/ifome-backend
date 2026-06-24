@@ -19,6 +19,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -42,7 +43,6 @@ import { WeekQueryDto } from './api/dto/requests/week-query.dto';
 import { DishResponseDto } from './api/dto/responses/dish-response.dto';
 import { MealResponseDto } from './api/dto/responses/meal-response.dto';
 import { MenuDayResponseDto } from './api/dto/responses/menu-day-response.dto';
-import { DeleteResultResponseDto } from './api/dto/responses/delete-result-response.dto';
 import { MenuApiMapper } from './api/mappers/menu.mappers';
 
 @ApiTags('menu')
@@ -110,8 +110,9 @@ export class MenuController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Atualiza um prato do catálogo (admin)' })
-  @ApiOkResponse({ type: DishResponseDto })
+  @ApiNoContentResponse({ description: 'Prato atualizado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido' })
   @ApiForbiddenResponse({ description: 'Acesso restrito a administradores' })
@@ -119,33 +120,30 @@ export class MenuController {
   async updateDish(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateDishDto,
-  ): Promise<DishResponseDto> {
-    const dish = await this.menuUseCases.updateDish(id, {
+  ): Promise<void> {
+    await this.menuUseCases.updateDish(id, {
       name: dto.name,
       description: dto.description,
       category: dto.category,
       restrictions: dto.restrictions,
     });
-    return MenuApiMapper.toDishResponse(dish);
   }
 
   @Delete('dishes/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove um prato do catálogo (admin)' })
-  @ApiOkResponse({ type: DeleteResultResponseDto })
+  @ApiNoContentResponse({ description: 'Prato removido' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido' })
   @ApiForbiddenResponse({ description: 'Acesso restrito a administradores' })
   @ApiNotFoundResponse({ description: 'Prato não encontrado' })
   @ApiConflictResponse({
     description: 'Prato em uso por uma refeição agendada',
   })
-  async deleteDish(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<DeleteResultResponseDto> {
+  async deleteDish(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.menuUseCases.deleteDish(id);
-    return { success: true };
   }
 
   @Post()
@@ -177,8 +175,9 @@ export class MenuController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Atualiza uma refeição agendada (admin)' })
-  @ApiOkResponse({ type: MealResponseDto })
+  @ApiNoContentResponse({ description: 'Refeição atualizada' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido' })
   @ApiForbiddenResponse({ description: 'Acesso restrito a administradores' })
@@ -186,12 +185,11 @@ export class MenuController {
   async updateMeal(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMealDto,
-  ): Promise<MealResponseDto> {
-    const meal = await this.menuUseCases.updateMeal(id, {
+  ): Promise<void> {
+    await this.menuUseCases.updateMeal(id, {
       capacity: dto.capacity,
       endTime: dto.endTime,
       dishes: dto.dishes,
     });
-    return MenuApiMapper.toMealResponse(meal);
   }
 }

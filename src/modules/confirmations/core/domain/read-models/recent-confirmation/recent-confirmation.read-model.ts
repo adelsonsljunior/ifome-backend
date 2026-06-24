@@ -1,7 +1,4 @@
-import { MealPeriod } from '../../entities/meal-history';
-
-// Tipo de confirmação no domínio. Espelha o enum ConfirmationType do banco.
-export type ConfirmationType = 'standard' | 'adapted';
+import { ConfirmationType, MealPeriod } from '../../entities/confirmation';
 
 // Read-model de leitura para o painel do admin: projeção que junta
 // Confirmation + Meal + User. Read-only; não é uma entidade de escrita.

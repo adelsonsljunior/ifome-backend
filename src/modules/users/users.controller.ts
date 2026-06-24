@@ -31,10 +31,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { ApiPaginatedResponse } from '../../common/swagger/api-paginated-response.decorator';
 import { PaginationQueryDto } from '../../common/dto/requests/pagination-query.dto';
 import { UpdateProfileDto } from './api/dto/requests/update-profile.dto';
-import { RecentConfirmationsQueryDto } from './api/dto/requests/recent-confirmations-query.dto';
 import { UserProfileResponseDto } from './api/dto/responses/user-profile-response.dto';
 import { MealHistoryResponseDto } from './api/dto/responses/meal-history-response.dto';
-import { RecentConfirmationResponseDto } from './api/dto/responses/recent-confirmation-response.dto';
 import { UserApiMapper } from './api/mappers/user.mappers';
 
 @ApiTags('users')
@@ -98,24 +96,5 @@ export class UsersController {
       query.pageSize,
     );
     return UserApiMapper.toMealHistoryPage(result);
-  }
-
-  @Get('recent-confirmations')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  @ApiOperation({
-    summary:
-      'Lista paginada das confirmações de refeição mais recentes (admin)',
-  })
-  @ApiPaginatedResponse(RecentConfirmationResponseDto)
-  @ApiForbiddenResponse({ description: 'Acesso restrito a administradores' })
-  async getRecentConfirmations(@Query() query: RecentConfirmationsQueryDto) {
-    this.logger.log(`Fetching recent confirmations (page ${query.page})`);
-    const result = await this.usersUseCases.getRecentConfirmations(
-      query.page,
-      query.pageSize,
-      query.sort,
-    );
-    return UserApiMapper.toRecentConfirmationPage(result);
   }
 }

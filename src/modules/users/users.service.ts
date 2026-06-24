@@ -1,11 +1,9 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { User } from './core/domain/entities/user';
 import { MealHistory } from './core/domain/entities/meal-history';
-import { RecentConfirmationReadModel } from './core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
 import { PaginationReadModel } from '../../shared/domain/read-models/pagination/pagination.read-model';
 import {
   IUsersUseCases,
-  RecentConfirmationsOrder,
   UpdateProfileData,
 } from './core/interfaces/primary/user.use-cases.interface';
 import {
@@ -62,23 +60,6 @@ export class UsersService implements IUsersUseCases {
       userId,
       skip,
       pageSize,
-    );
-    return PaginationReadModel.create(rows, page, pageSize, total);
-  }
-
-  async getRecentConfirmations(
-    page: number,
-    pageSize: number,
-    order: RecentConfirmationsOrder,
-  ): Promise<PaginationReadModel<RecentConfirmationReadModel>> {
-    this.logger.log(
-      `Getting recent confirmations (page ${page}, order: ${order})`,
-    );
-    const skip = (page - 1) * pageSize;
-    const { rows, total } = await this.userRepository.findRecentConfirmations(
-      skip,
-      pageSize,
-      order,
     );
     return PaginationReadModel.create(rows, page, pageSize, total);
   }

@@ -1,7 +1,6 @@
 import type { InjectionToken } from '@nestjs/common';
 import { DietaryType, User } from '../../domain/entities/user';
 import { MealHistory } from '../../domain/entities/meal-history';
-import { RecentConfirmationReadModel } from '../../domain/read-models/recent-confirmation/recent-confirmation.read-model';
 import { PaginationReadModel } from '../../../../../shared/domain/read-models/pagination/pagination.read-model';
 
 // Dados aceitos na atualização de perfil. `restrictions` ausente = não altera;
@@ -10,10 +9,6 @@ export interface UpdateProfileData {
   phone?: string;
   restrictions?: DietaryType[];
 }
-
-// Ordenação aceita para confirmações recentes (painel admin):
-// mais recentes (newest) ou mais antigas (oldest) primeiro.
-export type RecentConfirmationsOrder = 'newest' | 'oldest';
 
 // Porta de entrada: casos de uso de usuários (implementados pelo UsersService).
 export interface IUsersUseCases {
@@ -26,11 +21,6 @@ export interface IUsersUseCases {
     page: number,
     pageSize: number,
   ): Promise<PaginationReadModel<MealHistory>>;
-  getRecentConfirmations(
-    page: number,
-    pageSize: number,
-    order: RecentConfirmationsOrder,
-  ): Promise<PaginationReadModel<RecentConfirmationReadModel>>;
 }
 
 export const USERS_USECASES: InjectionToken<IUsersUseCases> =

@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional } from 'class-validator';
 import { PaginationQueryDto } from '../../../../../common/dto/requests/pagination-query.dto';
-import type { RecentConfirmationsOrder } from '../../../core/interfaces/primary/user.use-cases.interface';
+import type { RecentConfirmationsOrder } from '../../../core/interfaces/primary/confirmation.use-cases.interface';
 
 const SORT_OPTIONS: RecentConfirmationsOrder[] = ['newest', 'oldest'];
 
