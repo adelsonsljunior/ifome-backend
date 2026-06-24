@@ -1,11 +1,7 @@
 import type { InjectionToken } from '@nestjs/common';
 import { User } from '../../domain/entities/user';
 import { MealHistory } from '../../domain/entities/meal-history';
-import { RecentConfirmationReadModel } from '../../domain/read-models/recent-confirmation/recent-confirmation.read-model';
-import {
-  RecentConfirmationsOrder,
-  UpdateProfileData,
-} from '../primary/user.use-cases.interface';
+import { UpdateProfileData } from '../primary/user.use-cases.interface';
 
 // Resultado paginado cru do repositório: a página de itens + o total geral.
 export interface PagedResult<T> {
@@ -24,11 +20,6 @@ export interface IUserRepository {
     skip: number,
     take: number,
   ): Promise<PagedResult<MealHistory>>;
-  findRecentConfirmations(
-    skip: number,
-    take: number,
-    order: RecentConfirmationsOrder,
-  ): Promise<PagedResult<RecentConfirmationReadModel>>;
 }
 
 export const USER_REPOSITORY: InjectionToken<IUserRepository> =

@@ -2,18 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../../prisma/prisma.service';
 import { User } from '../../../core/domain/entities/user';
 import { MealHistory } from '../../../core/domain/entities/meal-history';
-import { RecentConfirmationReadModel } from '../../../core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
 import {
   IUserRepository,
   PagedResult,
 } from '../../../core/interfaces/secondary/user.repository.interface';
-import {
-  RecentConfirmationsOrder,
-  UpdateProfileData,
-} from '../../../core/interfaces/primary/user.use-cases.interface';
+import { UpdateProfileData } from '../../../core/interfaces/primary/user.use-cases.interface';
 import { UserPrismaMapper } from '../prisma/mappers/user.mappers';
 import { MealHistoryPrismaMapper } from '../prisma/mappers/meal-history.mappers';
-import { RecentConfirmationPrismaMapper } from '../prisma/mappers/recent-confirmation.mappers';
 
 // Projeção segura do usuário (sem `password`), com as restrições alimentares.
 const PROFILE_SELECT = {
@@ -118,42 +113,6 @@ export class UserRepository implements IUserRepository {
 
     return {
       rows: rows.map((row) => MealHistoryPrismaMapper.toDomain(row)),
-      total,
-    };
-  }
-
-  async findRecentConfirmations(
-    skip: number,
-    take: number,
-    order: RecentConfirmationsOrder,
-  ): Promise<PagedResult<RecentConfirmationReadModel>> {
-    // newest = mais recentes primeiro; oldest = mais antigas primeiro.
-    const ORDER_BY = {
-      newest: { confirmedAt: 'desc' },
-      oldest: { confirmedAt: 'asc' },
-    } as const;
-    const where = { canceledAt: null };
-
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.confirmation.findMany({
-        where,
-        orderBy: ORDER_BY[order],
-        skip,
-        take,
-        select: {
-          id: true,
-          userId: true,
-          type: true,
-          confirmedAt: true,
-          user: { select: { name: true, enrollment: true } },
-          meal: { select: { date: true, period: true } },
-        },
-      }),
-      this.prisma.confirmation.count({ where }),
-    ]);
-
-    return {
-      rows: rows.map((row) => RecentConfirmationPrismaMapper.toReadModel(row)),
       total,
     };
   }

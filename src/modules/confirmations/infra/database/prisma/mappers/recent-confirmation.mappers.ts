@@ -1,8 +1,8 @@
-import { MealPeriod } from '../../../../core/domain/entities/meal-history';
 import {
   ConfirmationType,
-  RecentConfirmationReadModel,
-} from '../../../../core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
+  MealPeriod,
+} from '../../../../core/domain/entities/confirmation';
+import { RecentConfirmationReadModel } from '../../../../core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
 
 // Linha do Prisma da confirmação com user e meal incluídos.
 export interface RecentConfirmationPrismaRow {
