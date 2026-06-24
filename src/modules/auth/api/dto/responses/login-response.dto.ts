@@ -1,8 +1,9 @@
-import { UserRole } from '../../../../users/core/domain/entities/user';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginResponseDto {
-  success: boolean;
-  role?: UserRole;
-  token?: string;
-  expiresIn?: number; // segundos até a expiração do token
+  @ApiProperty({
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTIzNDU2Ny04OWFiLWNkZWYtMDEyMy00NTY3ODlhYmNkZWYiLCJlbWFpbCI6ImFkbWluQGlmYWwuZWR1LmJyIiwicm9sZSI6IkFETUlOIn0.fake-signature-apenas-para-exemplo',
+  })
+  token: string;
 }

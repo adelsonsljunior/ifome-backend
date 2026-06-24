@@ -36,13 +36,13 @@ export class AuthController {
   @ApiResponse({ status: 200, type: LoginResponseDto })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   async login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
-    const { user, token, expiresIn } = await this.authUseCases.login(
+    const { token } = await this.authUseCases.login(
       dto.email,
       dto.password,
       dto.rememberMe,
     );
 
-    return { success: true, role: user.role, token, expiresIn };
+    return { token };
   }
 
   @Post('logout')
