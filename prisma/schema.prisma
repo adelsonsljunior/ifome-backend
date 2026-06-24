@@ -230,7 +230,7 @@ model StockItem {
   minQuantity     Decimal     @db.Decimal(12, 3)
   maxQuantity     Decimal     @db.Decimal(12, 3)
   unit            String // kg | L | un | etc
-  status          StockStatus @default(dbgenerated("'ok'::\"StockStatus\"")) // calculado pelo trigger trg_set_stock_status (BEFORE INSERT/UPDATE) — não escreva direto
+  status          StockStatus @default(ok) // calculado pelo trigger trg_set_stock_status (BEFORE INSERT/UPDATE) — não escreva direto
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
