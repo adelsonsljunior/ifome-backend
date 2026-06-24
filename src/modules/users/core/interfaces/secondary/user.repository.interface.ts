@@ -1,10 +1,33 @@
 import type { InjectionToken } from '@nestjs/common';
 import { User } from '../../domain/entities/user';
+import { MealHistory } from '../../domain/entities/meal-history';
+import { RecentConfirmationReadModel } from '../../domain/read-models/recent-confirmation/recent-confirmation.read-model';
+import {
+  RecentConfirmationsOrder,
+  UpdateProfileData,
+} from '../primary/user.use-cases.interface';
+
+// Resultado paginado cru do repositório: a página de itens + o total geral.
+export interface PagedResult<T> {
+  rows: T[];
+  total: number;
+}
 
 // Porta de saída: repositório de usuários (implementação Prisma vive em infra).
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
+  findProfileById(id: string): Promise<User | null>;
+  updateProfile(id: string, data: UpdateProfileData): Promise<User | null>;
+  findMealHistoryPage(
+    userId: string,
+    skip: number,
+    take: number,
+  ): Promise<PagedResult<MealHistory>>;
+  findRecentConfirmations(
+    limit: number,
+    order: RecentConfirmationsOrder,
+  ): Promise<RecentConfirmationReadModel[]>;
 }
 
 export const USER_REPOSITORY: InjectionToken<IUserRepository> =
