@@ -32,7 +32,21 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Autentica o usuário e retorna um token JWT' })
+  @ApiOperation({
+    summary: 'Autentica o usuário e retorna um token JWT',
+    description: [
+      'Usuários disponíveis no seed (`pnpm db:seed`). Senha padrão para todos: `12345678`.',
+      '',
+      '**Administradores**',
+      '- `admin@ifal.edu.br` — Administrador RU (Arapiraca)',
+      '- `gestor@ifal.edu.br` — Gestor RU (Maceió)',
+      '',
+      '**Alunos**',
+      '- `aluno@aluno.ifal.edu.br` — Aluno Teste (Arapiraca) — restrições: vegetarian, lactoseFree',
+      '- `maria@aluno.ifal.edu.br` — Maria Silva (Arapiraca) — restrições: vegan',
+      '- `joao@aluno.ifal.edu.br` — João Souza (Maceió)',
+    ].join('\n'),
+  })
   @ApiResponse({ status: 200, type: LoginResponseDto })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   async login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
