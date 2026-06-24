@@ -8,6 +8,7 @@ import { ConfirmationsModule } from './modules/confirmations/confirmations.modul
 import { StockModule } from './modules/stock/stock.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
     StockModule,
     NotificationsModule,
     AlertsModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
