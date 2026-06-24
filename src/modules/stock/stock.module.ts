@@ -4,8 +4,10 @@ import { StockController } from './stock.controller';
 import { STOCK_USECASES } from './core/interfaces/primary/stock.use-cases.interface';
 import { STOCK_REPOSITORY } from './core/interfaces/secondary/stock.repository.interface';
 import { StockRepository } from './infra/database/repository/stock.repository';
+import { AlertsModule } from '../alerts/alerts.module';
 
 @Module({
+  imports: [AlertsModule],
   controllers: [StockController],
   providers: [
     StockService,

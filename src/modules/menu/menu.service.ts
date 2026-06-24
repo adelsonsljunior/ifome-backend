@@ -21,9 +21,20 @@ import {
   type IMenuRepository,
 } from './core/interfaces/secondary/menu.repository.interface';
 import { MenuMessage } from './core/message/menu.message';
+import {
+  NOTIFICATION_ENGINE,
+  type INotificationEngine,
+} from '../notifications/core/interfaces/primary/notification-engine.interface';
 
 // Quantidade de dias retornados pelo cardápio da semana.
 const WEEK_DAYS = 7;
+
+// Rótulos de período para o texto da notificação aos alunos.
+const PERIOD_LABEL: Record<string, string> = {
+  breakfast: 'café da manhã',
+  lunch: 'almoço',
+  dinner: 'jantar',
+};
 
 @Injectable()
 export class MenuService implements IMenuUseCases {
@@ -32,6 +43,8 @@ export class MenuService implements IMenuUseCases {
   constructor(
     @Inject(MENU_REPOSITORY)
     private readonly menuRepository: IMenuRepository,
+    @Inject(NOTIFICATION_ENGINE)
+    private readonly notificationEngine: INotificationEngine,
   ) {}
 
   async getToday(): Promise<MenuDayReadModel> {
@@ -96,7 +109,28 @@ export class MenuService implements IMenuUseCases {
       throw new ConflictException(MenuMessage.MEAL_ALREADY_EXISTS);
     }
 
-    return this.menuRepository.createMeal(data);
+    const meal = await this.menuRepository.createMeal(data);
+    await this.notifyStudentsMenuPublished(meal);
+    return meal;
+  }
+
+  // Notifica os alunos sobre o novo cardápio. Best-effort: falha não invalida o
+  // agendamento já persistido.
+  private async notifyStudentsMenuPublished(meal: Meal): Promise<void> {
+    try {
+      const dateLabel = meal.date.toISOString().slice(0, 10);
+      const periodLabel = PERIOD_LABEL[meal.period] ?? meal.period;
+      await this.notificationEngine.notifyStudents({
+        icon: 'calendar',
+        title: 'Novo cardápio disponível',
+        body: `O cardápio do ${periodLabel} de ${dateLabel} já está disponível.`,
+      });
+    } catch (err) {
+      this.logger.error(
+        'Failed to notify students about new menu',
+        err instanceof Error ? err.stack : undefined,
+      );
+    }
   }
 
   async updateMeal(id: string, data: UpdateMealData): Promise<Meal> {

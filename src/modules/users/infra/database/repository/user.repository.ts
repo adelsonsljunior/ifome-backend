@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../../prisma/prisma.service';
-import { User } from '../../../core/domain/entities/user';
+import { User, UserRole } from '../../../core/domain/entities/user';
 import { MealHistory } from '../../../core/domain/entities/meal-history';
 import {
   IUserRepository,
@@ -115,5 +115,13 @@ export class UserRepository implements IUserRepository {
       rows: rows.map((row) => MealHistoryPrismaMapper.toDomain(row)),
       total,
     };
+  }
+
+  async findIdsByRole(role: UserRole): Promise<string[]> {
+    const rows = await this.prisma.user.findMany({
+      where: { role },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
   }
 }

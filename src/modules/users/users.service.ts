@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { User } from './core/domain/entities/user';
+import { User, UserRole } from './core/domain/entities/user';
 import { MealHistory } from './core/domain/entities/meal-history';
 import { PaginationReadModel } from '../../shared/domain/read-models/pagination/pagination.read-model';
 import {
@@ -62,5 +62,9 @@ export class UsersService implements IUsersUseCases {
       pageSize,
     );
     return PaginationReadModel.create(rows, page, pageSize, total);
+  }
+
+  async findIdsByRole(role: UserRole): Promise<string[]> {
+    return this.userRepository.findIdsByRole(role);
   }
 }

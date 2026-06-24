@@ -1,5 +1,5 @@
 import type { InjectionToken } from '@nestjs/common';
-import { User } from '../../domain/entities/user';
+import { User, UserRole } from '../../domain/entities/user';
 import { MealHistory } from '../../domain/entities/meal-history';
 import { UpdateProfileData } from '../primary/user.use-cases.interface';
 
@@ -20,6 +20,7 @@ export interface IUserRepository {
     skip: number,
     take: number,
   ): Promise<PagedResult<MealHistory>>;
+  findIdsByRole(role: UserRole): Promise<string[]>;
 }
 
 export const USER_REPOSITORY: InjectionToken<IUserRepository> =

@@ -1,5 +1,5 @@
 import type { InjectionToken } from '@nestjs/common';
-import { DietaryType, User } from '../../domain/entities/user';
+import { DietaryType, User, UserRole } from '../../domain/entities/user';
 import { MealHistory } from '../../domain/entities/meal-history';
 import { PaginationReadModel } from '../../../../../shared/domain/read-models/pagination/pagination.read-model';
 
@@ -21,6 +21,8 @@ export interface IUsersUseCases {
     page: number,
     pageSize: number,
   ): Promise<PaginationReadModel<MealHistory>>;
+  // IDs dos usuários de um papel (ex.: destinatários de notificações em massa).
+  findIdsByRole(role: UserRole): Promise<string[]>;
 }
 
 export const USERS_USECASES: InjectionToken<IUsersUseCases> =

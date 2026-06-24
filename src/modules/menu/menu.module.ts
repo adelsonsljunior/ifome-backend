@@ -4,8 +4,10 @@ import { MenuController } from './menu.controller';
 import { MENU_USECASES } from './core/interfaces/primary/menu.use-cases.interface';
 import { MENU_REPOSITORY } from './core/interfaces/secondary/menu.repository.interface';
 import { MenuRepository } from './infra/database/repository/menu.repository';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [MenuController],
   providers: [
     MenuService,

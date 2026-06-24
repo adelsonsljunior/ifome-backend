@@ -24,6 +24,10 @@ import {
   type IStockRepository,
 } from './core/interfaces/secondary/stock.repository.interface';
 import { StockMessage } from './core/message/stock.message';
+import {
+  ALERT_ENGINE,
+  type IAlertEngine,
+} from '../alerts/core/interfaces/primary/alert-engine.interface';
 
 @Injectable()
 export class StockService implements IStockUseCases {
@@ -32,6 +36,8 @@ export class StockService implements IStockUseCases {
   constructor(
     @Inject(STOCK_REPOSITORY)
     private readonly stockRepository: IStockRepository,
+    @Inject(ALERT_ENGINE)
+    private readonly alertEngine: IAlertEngine,
   ) {}
 
   async listItems(
@@ -133,7 +139,32 @@ export class StockService implements IStockUseCases {
       .withCreatedById(createdById)
       .build();
 
-    return this.stockRepository.registerMovement(movement);
+    const created = await this.stockRepository.registerMovement(movement);
+
+    // Pós-movimentação: se o item ficou crítico (< 30% do mínimo), gera alerta.
+    // Best-effort: falha na geração não invalida a movimentação já persistida.
+    await this.raiseAlertIfCritical(data.stockItemId);
+
+    return created;
+  }
+
+  private async raiseAlertIfCritical(itemId: string): Promise<void> {
+    try {
+      const item = await this.stockRepository.findItemById(itemId);
+      if (!item || item.status !== 'crit') return;
+      await this.alertEngine.raiseCriticalStockAlert({
+        itemId: item.id as string,
+        itemName: item.name,
+        currentQuantity: item.currentQuantity,
+        minQuantity: item.minQuantity,
+        unit: item.unit,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to raise critical stock alert for item ${itemId}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+    }
   }
 
   async listMovements(
