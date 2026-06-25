@@ -132,4 +132,81 @@ describe('NotificationsService', () => {
       );
     });
   });
+  describe('notifyUser', () => {
+    it('deve criar notificação para o usuário único', async () => {
+      notificationRepository.createMany.mockResolvedValue(undefined);
+
+      await service.notifyUser('user-1', {
+        icon: 'bell',
+        title: 'Aviso',
+        body: 'Conteúdo do aviso',
+      });
+
+      expect(notificationRepository.createMany).toHaveBeenCalledTimes(1);
+      const created = notificationRepository.createMany.mock.calls[0][0];
+      expect(created).toHaveLength(1);
+      expect(created[0].userId).toBe('user-1');
+      expect(created[0].title).toBe('Aviso');
+    });
+  });
+
+  describe('notifyStudents', () => {
+    it('deve buscar ids de STUDENT e criar notificações para todos', async () => {
+      usersUseCases.findIdsByRole.mockResolvedValue(['user-1', 'user-2']);
+      notificationRepository.createMany.mockResolvedValue(undefined);
+
+      await service.notifyStudents({
+        icon: 'utensils',
+        title: 'Cardápio publicado',
+        body: 'O cardápio de hoje está disponível.',
+      });
+
+      expect(usersUseCases.findIdsByRole).toHaveBeenCalledWith('STUDENT');
+      const created = notificationRepository.createMany.mock.calls[0][0];
+      expect(created).toHaveLength(2);
+      expect(created.map((n) => n.userId)).toEqual(['user-1', 'user-2']);
+    });
+
+    it('não deve chamar createMany quando não houver estudantes', async () => {
+      usersUseCases.findIdsByRole.mockResolvedValue([]);
+
+      await service.notifyStudents({
+        icon: 'utensils',
+        title: 'Cardápio publicado',
+        body: 'O cardápio de hoje está disponível.',
+      });
+
+      expect(notificationRepository.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('notifyAdmins', () => {
+    it('deve buscar ids de ADMIN e criar notificações para todos', async () => {
+      usersUseCases.findIdsByRole.mockResolvedValue(['admin-1']);
+      notificationRepository.createMany.mockResolvedValue(undefined);
+
+      await service.notifyAdmins({
+        icon: 'alert',
+        title: 'Estoque crítico',
+        body: 'Um item está com estoque crítico.',
+      });
+
+      expect(usersUseCases.findIdsByRole).toHaveBeenCalledWith('ADMIN');
+      const created = notificationRepository.createMany.mock.calls[0][0];
+      expect(created).toHaveLength(1);
+      expect(created[0].userId).toBe('admin-1');
+    });
+
+    it('não deve chamar createMany quando não houver admins', async () => {
+      usersUseCases.findIdsByRole.mockResolvedValue([]);
+
+      await service.notifyAdmins({
+        icon: 'alert',
+        title: 'Estoque crítico',
+        body: 'Um item está com estoque crítico.',
+      });
+
+      expect(notificationRepository.createMany).not.toHaveBeenCalled();
+    });
+  });
 });
