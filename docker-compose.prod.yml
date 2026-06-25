@@ -87,6 +87,7 @@ services:
       PORT: 8000
       DATABASE_URL: "postgresql://${POSTGRES_USER:-ifome}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ifome}?schema=public"
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      CORS_ALLOWED_HOSTS: ${CORS_ALLOWED_HOSTS:-*}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
