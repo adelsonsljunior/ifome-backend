@@ -187,7 +187,6 @@ describe('UsersService', () => {
 
       const result = await service.getMealHistory('user-1', 3, 10);
 
-      // page 3, pageSize 10 => skip = (3-1)*10 = 20
       expect(userRepository.findMealHistoryPage).toHaveBeenCalledWith(
         'user-1',
         20,
@@ -197,7 +196,7 @@ describe('UsersService', () => {
       expect(result.page).toBe(3);
       expect(result.pageSize).toBe(10);
       expect(result.total).toBe(25);
-      expect(result.totalPages).toBe(3); // ceil(25/10) = 3
+      expect(result.totalPages).toBe(3);
     });
 
     it('deve calcular skip zero para a primeira página', async () => {
