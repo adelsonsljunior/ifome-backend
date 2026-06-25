@@ -9,9 +9,7 @@ describe('UsersService', () => {
   let service: UsersService;
   let userRepository: jest.Mocked<IUserRepository>;
 
-  
   beforeEach(async () => {
-    
     const mockRepository: jest.Mocked<IUserRepository> = {
       findByEmail: jest.fn(),
       findById: jest.fn(),
@@ -35,7 +33,6 @@ describe('UsersService', () => {
     userRepository = module.get(USER_REPOSITORY);
   });
 
-  
   function buildUser() {
     return new UserBuilder()
       .withId('user-1')
@@ -51,14 +48,11 @@ describe('UsersService', () => {
 
   describe('findByEmail', () => {
     it('deve delegar ao repositório e retornar o usuário quando encontrado', async () => {
-      
       const user = buildUser();
       userRepository.findByEmail.mockResolvedValue(user);
 
-      
       const result = await service.findByEmail('aluno@ufal.br');
 
-      
       expect(userRepository.findByEmail).toHaveBeenCalledWith('aluno@ufal.br');
       expect(result).toBe(user);
     });
@@ -69,6 +63,54 @@ describe('UsersService', () => {
       const result = await service.findByEmail('inexistente@ufal.br');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findById', () => {
+    it('deve delegar ao repositório e retornar o usuário quando encontrado', async () => {
+      const user = buildUser();
+      userRepository.findById.mockResolvedValue(user);
+
+      const result = await service.findById('user-1');
+
+      expect(userRepository.findById).toHaveBeenCalledWith('user-1');
+      expect(result).toBe(user);
+    });
+
+    it('deve retornar null quando o repositório não encontrar o usuário', async () => {
+      userRepository.findById.mockResolvedValue(null);
+
+      const result = await service.findById('id-inexistente');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getProfile', () => {
+    it('deve retornar o perfil do usuário quando encontrado', async () => {
+      const user = buildUser();
+      userRepository.findProfileById.mockResolvedValue(user);
+
+      const result = await service.getProfile('user-1');
+
+      expect(userRepository.findProfileById).toHaveBeenCalledWith('user-1');
+      expect(result).toBe(user);
+    });
+
+    it('deve lançar NotFoundException quando o usuário não existir', async () => {
+      userRepository.findProfileById.mockResolvedValue(null);
+
+      await expect(service.getProfile('id-inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('deve lançar NotFoundException com a mensagem correta', async () => {
+      userRepository.findProfileById.mockResolvedValue(null);
+
+      await expect(service.getProfile('id-inexistente')).rejects.toThrow(
+        UserMessage.NOT_FOUND,
+      );
     });
   });
 });
