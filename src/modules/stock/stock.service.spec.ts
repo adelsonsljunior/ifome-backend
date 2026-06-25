@@ -95,7 +95,7 @@ describe('StockService', () => {
       expect(stockRepository.findItems).toHaveBeenCalledWith(undefined, 5, 5);
       expect(result.data).toBe(items);
       expect(result.total).toBe(15);
-      expect(result.totalPages).toBe(3); // ceil(15/5) = 3
+      expect(result.totalPages).toBe(3); 
     });
   });
   describe('getItem', () => {
@@ -208,7 +208,6 @@ describe('StockService', () => {
     });
 
     it('deve lançar BadRequestException quando o novo range quebra mín < atual < máx', async () => {
-      // currentQuantity é 50; se o novo minQuantity subir para 60, 50 < 60 é falso.
       const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
       stockRepository.findItemById.mockResolvedValue(existing);
 
@@ -243,6 +242,146 @@ describe('StockService', () => {
       await expect(service.deleteItem('id-inexistente')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+  describe('registerMovement', () => {
+    const movementData = {
+      stockItemId: 'item-1',
+      type: 'entrada' as const,
+      quantity: 20,
+      reason: 'Reposição semanal',
+    };
+
+    it('deve registrar movimentação de entrada com sucesso', async () => {
+      const item = buildItem({ currentQuantity: 50, status: 'ok' });
+      const createdMovement = new StockMovementBuilder()
+        .withId('mov-1')
+        .withStockItemId('item-1')
+        .withType('entrada')
+        .withQuantity(20)
+        .build();
+
+      stockRepository.findItemById.mockResolvedValue(item);
+      stockRepository.registerMovement.mockResolvedValue(createdMovement);
+
+      const result = await service.registerMovement(movementData, 'admin-1');
+
+      expect(stockRepository.registerMovement).toHaveBeenCalled();
+      expect(result).toBe(createdMovement);
+    });
+
+    it('deve lançar NotFoundException quando o item não existir', async () => {
+      stockRepository.findItemById.mockResolvedValue(null);
+
+      await expect(
+        service.registerMovement(movementData, 'admin-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve lançar BadRequestException quando a saída exceder o saldo', async () => {
+      const item = buildItem({ currentQuantity: 10 });
+      stockRepository.findItemById.mockResolvedValue(item);
+
+      const saidaData = { ...movementData, type: 'saida' as const, quantity: 50 };
+
+      await expect(
+        service.registerMovement(saidaData, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve lançar BadRequestException com a mensagem de saldo insuficiente', async () => {
+      const item = buildItem({ currentQuantity: 10 });
+      stockRepository.findItemById.mockResolvedValue(item);
+
+      const saidaData = { ...movementData, type: 'saida' as const, quantity: 50 };
+
+      await expect(
+        service.registerMovement(saidaData, 'admin-1'),
+      ).rejects.toThrow(StockMessage.INSUFFICIENT_STOCK);
+    });
+
+    it('deve permitir saída quando a quantidade é exatamente igual ao saldo', async () => {
+      const item = buildItem({ currentQuantity: 10 });
+      const createdMovement = new StockMovementBuilder()
+        .withId('mov-1')
+        .withStockItemId('item-1')
+        .withType('saida')
+        .withQuantity(10)
+        .build();
+
+      stockRepository.findItemById.mockResolvedValue(item);
+      stockRepository.registerMovement.mockResolvedValue(createdMovement);
+
+      const saidaData = { ...movementData, type: 'saida' as const, quantity: 10 };
+
+      const result = await service.registerMovement(saidaData, 'admin-1');
+
+      expect(result).toBe(createdMovement);
+    });
+
+    it('deve disparar alerta quando o item ficar crítico após a movimentação', async () => {
+      const itemBefore = buildItem({ currentQuantity: 50, status: 'ok' });
+      const itemAfter = buildItem({ currentQuantity: 2, status: 'crit' });
+      const createdMovement = new StockMovementBuilder()
+        .withId('mov-1')
+        .withStockItemId('item-1')
+        .withType('saida')
+        .withQuantity(48)
+        .build();
+
+   
+      stockRepository.findItemById
+        .mockResolvedValueOnce(itemBefore)
+        .mockResolvedValueOnce(itemAfter);
+      stockRepository.registerMovement.mockResolvedValue(createdMovement);
+
+      const saidaData = { ...movementData, type: 'saida' as const, quantity: 48 };
+      await service.registerMovement(saidaData, 'admin-1');
+
+      expect(alertEngine.raiseCriticalStockAlert).toHaveBeenCalledWith({
+        itemId: 'item-1',
+        itemName: itemAfter.name,
+        currentQuantity: itemAfter.currentQuantity,
+        minQuantity: itemAfter.minQuantity,
+        unit: itemAfter.unit,
+      });
+    });
+
+    it('não deve disparar alerta quando o item não estiver crítico após a movimentação', async () => {
+      const item = buildItem({ currentQuantity: 50, status: 'ok' });
+      const createdMovement = new StockMovementBuilder()
+        .withId('mov-1')
+        .withStockItemId('item-1')
+        .withType('entrada')
+        .withQuantity(20)
+        .build();
+
+      stockRepository.findItemById.mockResolvedValue(item);
+      stockRepository.registerMovement.mockResolvedValue(createdMovement);
+
+      await service.registerMovement(movementData, 'admin-1');
+
+      expect(alertEngine.raiseCriticalStockAlert).not.toHaveBeenCalled();
+    });
+
+    it('não deve quebrar a movimentação quando o alertEngine falhar (best-effort)', async () => {
+      const item = buildItem({ currentQuantity: 2, status: 'crit' });
+      const createdMovement = new StockMovementBuilder()
+        .withId('mov-1')
+        .withStockItemId('item-1')
+        .withType('entrada')
+        .withQuantity(20)
+        .build();
+
+      stockRepository.findItemById.mockResolvedValue(item);
+      stockRepository.registerMovement.mockResolvedValue(createdMovement);
+      alertEngine.raiseCriticalStockAlert.mockRejectedValue(
+        new Error('Falha no engine de alertas'),
+      );
+
+      const result = await service.registerMovement(movementData, 'admin-1');
+
+      expect(result).toBe(createdMovement);
     });
   });
 });
