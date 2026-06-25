@@ -6,6 +6,7 @@ import {
 } from '../../../core/domain/entities/confirmation';
 import { ConfirmationReadModel } from '../../../core/domain/read-models/confirmation/confirmation.read-model';
 import { RecentConfirmationReadModel } from '../../../core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
+import { DemandPoint } from '../../../core/domain/read-models/demand/demand.read-model';
 import {
   IConfirmationRepository,
   MealForConfirmation,
@@ -142,5 +143,23 @@ export class ConfirmationRepository implements IConfirmationRepository {
       rows: rows.map((row) => RecentConfirmationPrismaMapper.toReadModel(row)),
       total,
     };
+  }
+
+  async aggregateDemand(from: Date, to: Date): Promise<DemandPoint[]> {
+    // Conta as confirmações ativas (canceledAt = null) por refeição (data+período)
+    // no intervalo. Uma refeição é única por (date, period).
+    const rows = await this.prisma.meal.findMany({
+      where: { date: { gte: from, lte: to } },
+      orderBy: [{ date: 'asc' }, { period: 'asc' }],
+      select: {
+        date: true,
+        period: true,
+        _count: { select: { confirmations: { where: { canceledAt: null } } } },
+      },
+    });
+
+    return rows.map(
+      (row) => new DemandPoint(row.date, row.period, row._count.confirmations),
+    );
   }
 }

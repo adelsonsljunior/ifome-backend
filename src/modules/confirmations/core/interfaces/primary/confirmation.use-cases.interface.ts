@@ -5,6 +5,7 @@ import {
 } from '../../domain/entities/confirmation';
 import { ConfirmationReadModel } from '../../domain/read-models/confirmation/confirmation.read-model';
 import { RecentConfirmationReadModel } from '../../domain/read-models/recent-confirmation/recent-confirmation.read-model';
+import { DemandPoint } from '../../domain/read-models/demand/demand.read-model';
 import { PaginationReadModel } from '../../../../../shared/domain/read-models/pagination/pagination.read-model';
 
 // Dados da confirmação solicitada pelo aluno (refeição de hoje no período informado).
@@ -27,6 +28,8 @@ export interface IConfirmationUseCases {
     pageSize: number,
     order: RecentConfirmationsOrder,
   ): Promise<PaginationReadModel<RecentConfirmationReadModel>>;
+  // Demanda (confirmações ativas por dia+período) dos últimos 7 dias, ao vivo.
+  getDemandLast7Days(): Promise<DemandPoint[]>;
 }
 
 export const CONFIRMATION_USECASES: InjectionToken<IConfirmationUseCases> =

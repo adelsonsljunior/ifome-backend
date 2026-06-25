@@ -2,6 +2,7 @@ import type { InjectionToken } from '@nestjs/common';
 import { Confirmation, MealPeriod } from '../../domain/entities/confirmation';
 import { ConfirmationReadModel } from '../../domain/read-models/confirmation/confirmation.read-model';
 import { RecentConfirmationReadModel } from '../../domain/read-models/recent-confirmation/recent-confirmation.read-model';
+import { DemandPoint } from '../../domain/read-models/demand/demand.read-model';
 import { RecentConfirmationsOrder } from '../primary/confirmation.use-cases.interface';
 
 // Resultado paginado cru do repositório: a página de itens + o total geral.
@@ -55,6 +56,9 @@ export interface IConfirmationRepository {
     take: number,
     order: RecentConfirmationsOrder,
   ): Promise<PagedResult<RecentConfirmationReadModel>>;
+
+  // Demanda agregada (confirmações ativas por refeição) no intervalo [from, to].
+  aggregateDemand(from: Date, to: Date): Promise<DemandPoint[]>;
 }
 
 export const CONFIRMATION_REPOSITORY: InjectionToken<IConfirmationRepository> =

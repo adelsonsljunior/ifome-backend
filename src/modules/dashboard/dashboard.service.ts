@@ -4,7 +4,10 @@ import {
   DashboardStats,
 } from './core/domain/read-models/dashboard/dashboard.read-model';
 import { IDashboardUseCases } from './core/interfaces/primary/dashboard.use-cases.interface';
-import { MenuDayReadModel } from '../menu/core/domain/read-models/menu-day/menu-day.read-model';
+import {
+  MealView,
+  MenuDayReadModel,
+} from '../menu/core/domain/read-models/menu-day/menu-day.read-model';
 import {
   MENU_USECASES,
   type IMenuUseCases,
@@ -26,7 +29,12 @@ import {
 const RECENT_ALERTS = 6;
 const RECENT_CONFIRMATIONS = 5;
 const SHORTAGE_LIMIT = 1000; // itens em falta cabem com folga
-const DEMAND_LIMIT = 100; // 7 dias × 3 períodos = no máximo 21 pontos
+
+// Converte 'HH:mm' em minutos do dia.
+const toMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
 
 @Injectable()
 export class DashboardService implements IDashboardUseCases {
@@ -39,27 +47,63 @@ export class DashboardService implements IDashboardUseCases {
   ) {}
 
   async getDashboard(): Promise<DashboardReadModel> {
-    const [menuToday, alertsPage, critPage, lowPage, demandPage, recentPage] =
-      await Promise.all([
-        this.menu.getToday(),
-        this.alerts.listAlerts('all', 1, RECENT_ALERTS),
-        this.stock.listItems('crit', 1, SHORTAGE_LIMIT),
-        this.stock.listItems('low', 1, SHORTAGE_LIMIT),
-        this.alerts.getDemand7Days(1, DEMAND_LIMIT),
-        this.confirmations.getRecent(1, RECENT_CONFIRMATIONS, 'newest'),
-      ]);
+    const [
+      menuToday,
+      alertsPage,
+      activeAlertsCount,
+      critPage,
+      lowPage,
+      demand7d,
+      recentPage,
+    ] = await Promise.all([
+      this.menu.getToday(),
+      this.alerts.listAlerts('all', 1, RECENT_ALERTS),
+      this.alerts.unresolvedCount(),
+      this.stock.listItems('crit', 1, SHORTAGE_LIMIT),
+      this.stock.listItems('low', 1, SHORTAGE_LIMIT),
+      this.confirmations.getDemandLast7Days(),
+      this.confirmations.getRecent(1, RECENT_CONFIRMATIONS, 'newest'),
+    ]);
 
-    // Itens em falta: críticos primeiro, depois baixos.
+    // Itens em falta (status != ok): críticos primeiro, depois baixos.
     const stock = [...critPage.data, ...lowPage.data];
+    const shortageItemsCount = critPage.total + lowPage.total;
 
     return new DashboardReadModel(
       menuToday,
       this.computeStats(menuToday),
+      this.pickCurrentMeal(menuToday),
       alertsPage.data,
+      activeAlertsCount,
       stock,
-      demandPage.data,
+      shortageItemsCount,
+      demand7d,
       recentPage.data,
     );
+  }
+
+  // Seleciona a refeição "de agora" pelo horário do servidor: a que está em curso
+  // (start <= agora <= end); senão a próxima do dia; senão a última; senão null.
+  private pickCurrentMeal(menu: MenuDayReadModel): MealView | null {
+    if (menu.meals.length === 0) return null;
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const meals = [...menu.meals].sort(
+      (a, b) => toMinutes(a.startTime) - toMinutes(b.startTime),
+    );
+
+    const active = meals.find(
+      (meal) =>
+        toMinutes(meal.startTime) <= nowMinutes &&
+        nowMinutes <= toMinutes(meal.endTime),
+    );
+    if (active) return active;
+
+    const upcoming = meals.find(
+      (meal) => toMinutes(meal.startTime) > nowMinutes,
+    );
+    return upcoming ?? meals[meals.length - 1];
   }
 
   // Estatísticas agregadas das refeições de hoje.

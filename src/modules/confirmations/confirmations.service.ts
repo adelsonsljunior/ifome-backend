@@ -12,6 +12,7 @@ import {
 } from './core/domain/entities/confirmation';
 import { ConfirmationReadModel } from './core/domain/read-models/confirmation/confirmation.read-model';
 import { RecentConfirmationReadModel } from './core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
+import { DemandPoint } from './core/domain/read-models/demand/demand.read-model';
 import { PaginationReadModel } from '../../shared/domain/read-models/pagination/pagination.read-model';
 import {
   ConfirmData,
@@ -133,6 +134,15 @@ export class ConfirmationsService implements IConfirmationUseCases {
       order,
     );
     return PaginationReadModel.create(rows, page, pageSize, total);
+  }
+
+  async getDemandLast7Days(): Promise<DemandPoint[]> {
+    // Janela de 7 dias: de hoje até 6 dias atrás (meia-noite UTC).
+    const to = this.todayUtc();
+    const from = new Date(
+      Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() - 6),
+    );
+    return this.confirmationRepository.aggregateDemand(from, to);
   }
 
   // Verdadeiro se o prazo de confirmação do período (em UTC) já passou.
