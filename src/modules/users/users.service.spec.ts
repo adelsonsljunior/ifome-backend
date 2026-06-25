@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { USER_REPOSITORY, IUserRepository } from './core/interfaces/secondary/user.repository.interface';
+import {
+  USER_REPOSITORY,
+  IUserRepository,
+} from './core/interfaces/secondary/user.repository.interface';
 import { UserBuilder } from './core/domain/entities/user';
 import { UserMessage } from './core/message/user.message';
+import { MealHistory } from './core/domain/entities/meal-history';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -113,6 +118,7 @@ describe('UsersService', () => {
       );
     });
   });
+
   describe('updateProfile', () => {
     it('deve atualizar e retornar o usuário quando encontrado', async () => {
       const updateData = { phone: '82999998888' };
@@ -137,7 +143,6 @@ describe('UsersService', () => {
     });
 
     it('deve repassar restrictions vazio como substituição explícita', async () => {
-      const updateData = { restrictions: [] as const };
       const updatedUser = buildUser();
       userRepository.updateProfile.mockResolvedValue(updatedUser);
 
@@ -148,6 +153,7 @@ describe('UsersService', () => {
       });
     });
   });
+
   describe('findIdsByRole', () => {
     it('deve delegar ao repositório e retornar a lista de ids', async () => {
       const ids = ['user-1', 'user-2', 'user-3'];
@@ -167,11 +173,12 @@ describe('UsersService', () => {
       expect(result).toEqual([]);
     });
   });
+
   describe('getMealHistory', () => {
     it('deve calcular o skip corretamente e retornar a página montada', async () => {
       const mealHistoryRows = [
-        { id: 'meal-1', dish: 'Feijoada' } as any,
-        { id: 'meal-2', dish: 'Lasanha' } as any,
+        { id: 'meal-1', dish: 'Feijoada' } as unknown as MealHistory,
+        { id: 'meal-2', dish: 'Lasanha' } as unknown as MealHistory,
       ];
       userRepository.findMealHistoryPage.mockResolvedValue({
         rows: mealHistoryRows,
