@@ -148,4 +148,23 @@ describe('UsersService', () => {
       });
     });
   });
+  describe('findIdsByRole', () => {
+    it('deve delegar ao repositório e retornar a lista de ids', async () => {
+      const ids = ['user-1', 'user-2', 'user-3'];
+      userRepository.findIdsByRole.mockResolvedValue(ids);
+
+      const result = await service.findIdsByRole('STUDENT');
+
+      expect(userRepository.findIdsByRole).toHaveBeenCalledWith('STUDENT');
+      expect(result).toBe(ids);
+    });
+
+    it('deve retornar lista vazia quando não houver usuários com o papel', async () => {
+      userRepository.findIdsByRole.mockResolvedValue([]);
+
+      const result = await service.findIdsByRole('ADMIN');
+
+      expect(result).toEqual([]);
+    });
+  });
 });
