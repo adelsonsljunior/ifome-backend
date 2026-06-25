@@ -384,4 +384,38 @@ describe('StockService', () => {
       expect(result).toBe(createdMovement);
     });
   });
+  describe('listMovements', () => {
+    it('deve calcular skip corretamente e montar a paginação', async () => {
+      const movement = new StockMovementBuilder()
+        .withId('mov-1')
+        .withStockItemId('item-1')
+        .withType('entrada')
+        .withQuantity(10)
+        .build();
+      stockRepository.findMovements.mockResolvedValue({
+        rows: [movement],
+        total: 30,
+      });
+
+      const filters = { stockItemId: 'item-1' };
+      const result = await service.listMovements(filters, 3, 10);
+
+      expect(stockRepository.findMovements).toHaveBeenCalledWith(
+        filters,
+        20,
+        10,
+      );
+      expect(result.data).toEqual([movement]);
+      expect(result.total).toBe(30);
+      expect(result.totalPages).toBe(3); 
+    });
+
+    it('deve repassar filtros vazios quando não informados', async () => {
+      stockRepository.findMovements.mockResolvedValue({ rows: [], total: 0 });
+
+      await service.listMovements({}, 1, 10);
+
+      expect(stockRepository.findMovements).toHaveBeenCalledWith({}, 0, 10);
+    });
+  });
 });
