@@ -98,4 +98,74 @@ describe('StockService', () => {
       expect(result.totalPages).toBe(3); // ceil(15/5) = 3
     });
   });
+  describe('getItem', () => {
+    it('deve retornar o item quando encontrado', async () => {
+      const item = buildItem();
+      stockRepository.findItemById.mockResolvedValue(item);
+
+      const result = await service.getItem('item-1');
+
+      expect(stockRepository.findItemById).toHaveBeenCalledWith('item-1');
+      expect(result).toBe(item);
+    });
+
+    it('deve lançar NotFoundException quando o item não existir', async () => {
+      stockRepository.findItemById.mockResolvedValue(null);
+
+      await expect(service.getItem('id-inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('createItem', () => {
+    const validData = {
+      name: 'Feijão',
+      category: 'Grãos',
+      currentQuantity: 50,
+      minQuantity: 10,
+      maxQuantity: 100,
+      unit: 'kg',
+    };
+
+    it('deve criar o item quando o range é válido (min < atual < max)', async () => {
+      const createdItem = buildItem();
+      stockRepository.createItem.mockResolvedValue(createdItem);
+
+      const result = await service.createItem(validData);
+
+      expect(stockRepository.createItem).toHaveBeenCalledWith(validData);
+      expect(result).toBe(createdItem);
+    });
+
+    it('deve lançar BadRequestException quando a quantidade atual for igual ao mínimo', async () => {
+      const invalidData = { ...validData, currentQuantity: 10, minQuantity: 10 };
+
+      await expect(service.createItem(invalidData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('deve lançar BadRequestException quando a quantidade atual for igual ao máximo', async () => {
+      const invalidData = { ...validData, currentQuantity: 100, maxQuantity: 100 };
+
+      await expect(service.createItem(invalidData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('deve lançar BadRequestException com a mensagem correta de range inválido', async () => {
+      const invalidData = { ...validData, currentQuantity: 200 };
+
+      await expect(service.createItem(invalidData)).rejects.toThrow(
+        StockMessage.INVALID_QUANTITY_RANGE,
+      );
+    });
+
+    it('deve lançar erro do builder quando o nome for muito curto', async () => {
+      const invalidData = { ...validData, name: 'A' };
+
+      await expect(service.createItem(invalidData)).rejects.toThrow();
+    });
+  });
 });
