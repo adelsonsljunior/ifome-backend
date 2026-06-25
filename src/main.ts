@@ -30,6 +30,20 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const configService = app.get(ConfigService);
+
+  // CORS: define as origens permitidas via CORS_ALLOWED_HOSTS.
+  // Aceita uma lista separada por vírgula; sem ela (ou com "*"), libera todas as origens.
+  const allowedHosts = configService.get<string>('CORS_ALLOWED_HOSTS') ?? '*';
+  const origins =
+    allowedHosts === '*'
+      ? '*'
+      : allowedHosts.split(',').map((host) => host.trim());
+  app.enableCors({
+    origin: origins,
+    // credentials só pode ser usado com origens específicas (navegadores barram "*" + credentials).
+    credentials: origins !== '*',
+  });
+
   const port = configService.get<number>('PORT') ?? 8000;
   await app.listen(port);
 
