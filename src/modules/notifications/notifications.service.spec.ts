@@ -92,4 +92,44 @@ describe('NotificationsService', () => {
       expect(result).toBe(7);
     });
   });
+  describe('markRead', () => {
+    it('deve marcar como lida com sucesso', async () => {
+      notificationRepository.markRead.mockResolvedValue(true);
+
+      await service.markRead('user-1', 'notif-1');
+
+      expect(notificationRepository.markRead).toHaveBeenCalledWith(
+        'user-1',
+        'notif-1',
+      );
+    });
+
+    it('deve lançar NotFoundException quando a notificação não existir', async () => {
+      notificationRepository.markRead.mockResolvedValue(false);
+
+      await expect(
+        service.markRead('user-1', 'id-inexistente'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve lançar NotFoundException com a mensagem correta', async () => {
+      notificationRepository.markRead.mockResolvedValue(false);
+
+      await expect(
+        service.markRead('user-1', 'id-inexistente'),
+      ).rejects.toThrow(NotificationMessage.NOT_FOUND);
+    });
+  });
+
+  describe('markAllRead', () => {
+    it('deve delegar a markAllRead', async () => {
+      notificationRepository.markAllRead.mockResolvedValue(undefined);
+
+      await service.markAllRead('user-1');
+
+      expect(notificationRepository.markAllRead).toHaveBeenCalledWith(
+        'user-1',
+      );
+    });
+  });
 });
