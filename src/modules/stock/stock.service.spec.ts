@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StockService } from './stock.service';
@@ -71,11 +72,7 @@ describe('StockService', () => {
 
       await service.listItems('all', 1, 10);
 
-      expect(stockRepository.findItems).toHaveBeenCalledWith(
-        undefined,
-        0,
-        10,
-      );
+      expect(stockRepository.findItems).toHaveBeenCalledWith(undefined, 0, 10);
     });
 
     it('deve repassar o status quando o filtro não for "all"', async () => {
@@ -95,7 +92,7 @@ describe('StockService', () => {
       expect(stockRepository.findItems).toHaveBeenCalledWith(undefined, 5, 5);
       expect(result.data).toBe(items);
       expect(result.total).toBe(15);
-      expect(result.totalPages).toBe(3); 
+      expect(result.totalPages).toBe(3);
     });
   });
   describe('getItem', () => {
@@ -139,7 +136,11 @@ describe('StockService', () => {
     });
 
     it('deve lançar BadRequestException quando a quantidade atual for igual ao mínimo', async () => {
-      const invalidData = { ...validData, currentQuantity: 10, minQuantity: 10 };
+      const invalidData = {
+        ...validData,
+        currentQuantity: 10,
+        minQuantity: 10,
+      };
 
       await expect(service.createItem(invalidData)).rejects.toThrow(
         BadRequestException,
@@ -147,7 +148,11 @@ describe('StockService', () => {
     });
 
     it('deve lançar BadRequestException quando a quantidade atual for igual ao máximo', async () => {
-      const invalidData = { ...validData, currentQuantity: 100, maxQuantity: 100 };
+      const invalidData = {
+        ...validData,
+        currentQuantity: 100,
+        maxQuantity: 100,
+      };
 
       await expect(service.createItem(invalidData)).rejects.toThrow(
         BadRequestException,
@@ -170,7 +175,11 @@ describe('StockService', () => {
   });
   describe('updateItem', () => {
     it('deve atualizar quando os novos limites são válidos', async () => {
-      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      const existing = buildItem({
+        currentQuantity: 50,
+        minQuantity: 10,
+        maxQuantity: 100,
+      });
       stockRepository.findItemById.mockResolvedValue(existing);
       stockRepository.updateItem.mockResolvedValue(existing);
 
@@ -190,7 +199,11 @@ describe('StockService', () => {
     });
 
     it('deve lançar BadRequestException quando minQuantity >= maxQuantity', async () => {
-      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      const existing = buildItem({
+        currentQuantity: 50,
+        minQuantity: 10,
+        maxQuantity: 100,
+      });
       stockRepository.findItemById.mockResolvedValue(existing);
 
       await expect(
@@ -199,7 +212,11 @@ describe('StockService', () => {
     });
 
     it('deve lançar BadRequestException com a mensagem de min/max inválido', async () => {
-      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      const existing = buildItem({
+        currentQuantity: 50,
+        minQuantity: 10,
+        maxQuantity: 100,
+      });
       stockRepository.findItemById.mockResolvedValue(existing);
 
       await expect(
@@ -208,7 +225,11 @@ describe('StockService', () => {
     });
 
     it('deve lançar BadRequestException quando o novo range quebra mín < atual < máx', async () => {
-      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      const existing = buildItem({
+        currentQuantity: 50,
+        minQuantity: 10,
+        maxQuantity: 100,
+      });
       stockRepository.findItemById.mockResolvedValue(existing);
 
       await expect(
@@ -217,7 +238,11 @@ describe('StockService', () => {
     });
 
     it('deve lançar NotFoundException quando o repositório não encontrar o item ao salvar', async () => {
-      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      const existing = buildItem({
+        currentQuantity: 50,
+        minQuantity: 10,
+        maxQuantity: 100,
+      });
       stockRepository.findItemById.mockResolvedValue(existing);
       stockRepository.updateItem.mockResolvedValue(null);
 
@@ -282,7 +307,11 @@ describe('StockService', () => {
       const item = buildItem({ currentQuantity: 10 });
       stockRepository.findItemById.mockResolvedValue(item);
 
-      const saidaData = { ...movementData, type: 'saida' as const, quantity: 50 };
+      const saidaData = {
+        ...movementData,
+        type: 'saida' as const,
+        quantity: 50,
+      };
 
       await expect(
         service.registerMovement(saidaData, 'admin-1'),
@@ -293,7 +322,11 @@ describe('StockService', () => {
       const item = buildItem({ currentQuantity: 10 });
       stockRepository.findItemById.mockResolvedValue(item);
 
-      const saidaData = { ...movementData, type: 'saida' as const, quantity: 50 };
+      const saidaData = {
+        ...movementData,
+        type: 'saida' as const,
+        quantity: 50,
+      };
 
       await expect(
         service.registerMovement(saidaData, 'admin-1'),
@@ -312,7 +345,11 @@ describe('StockService', () => {
       stockRepository.findItemById.mockResolvedValue(item);
       stockRepository.registerMovement.mockResolvedValue(createdMovement);
 
-      const saidaData = { ...movementData, type: 'saida' as const, quantity: 10 };
+      const saidaData = {
+        ...movementData,
+        type: 'saida' as const,
+        quantity: 10,
+      };
 
       const result = await service.registerMovement(saidaData, 'admin-1');
 
@@ -329,13 +366,16 @@ describe('StockService', () => {
         .withQuantity(48)
         .build();
 
-   
       stockRepository.findItemById
         .mockResolvedValueOnce(itemBefore)
         .mockResolvedValueOnce(itemAfter);
       stockRepository.registerMovement.mockResolvedValue(createdMovement);
 
-      const saidaData = { ...movementData, type: 'saida' as const, quantity: 48 };
+      const saidaData = {
+        ...movementData,
+        type: 'saida' as const,
+        quantity: 48,
+      };
       await service.registerMovement(saidaData, 'admin-1');
 
       expect(alertEngine.raiseCriticalStockAlert).toHaveBeenCalledWith({
@@ -407,7 +447,7 @@ describe('StockService', () => {
       );
       expect(result.data).toEqual([movement]);
       expect(result.total).toBe(30);
-      expect(result.totalPages).toBe(3); 
+      expect(result.totalPages).toBe(3);
     });
 
     it('deve repassar filtros vazios quando não informados', async () => {
