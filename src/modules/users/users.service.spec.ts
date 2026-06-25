@@ -113,4 +113,39 @@ describe('UsersService', () => {
       );
     });
   });
+  describe('updateProfile', () => {
+    it('deve atualizar e retornar o usuário quando encontrado', async () => {
+      const updateData = { phone: '82999998888' };
+      const updatedUser = buildUser();
+      userRepository.updateProfile.mockResolvedValue(updatedUser);
+
+      const result = await service.updateProfile('user-1', updateData);
+
+      expect(userRepository.updateProfile).toHaveBeenCalledWith(
+        'user-1',
+        updateData,
+      );
+      expect(result).toBe(updatedUser);
+    });
+
+    it('deve lançar NotFoundException quando o usuário não existir', async () => {
+      userRepository.updateProfile.mockResolvedValue(null);
+
+      await expect(
+        service.updateProfile('id-inexistente', { phone: '82999998888' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve repassar restrictions vazio como substituição explícita', async () => {
+      const updateData = { restrictions: [] as const };
+      const updatedUser = buildUser();
+      userRepository.updateProfile.mockResolvedValue(updatedUser);
+
+      await service.updateProfile('user-1', { restrictions: [] });
+
+      expect(userRepository.updateProfile).toHaveBeenCalledWith('user-1', {
+        restrictions: [],
+      });
+    });
+  });
 });
