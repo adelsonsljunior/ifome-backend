@@ -11,12 +11,11 @@ export interface PagedResult<T> {
 }
 
 // Projeção mínima da refeição usada para validar prazo e capacidade.
-// `endTime` em 'HH:mm'; a conversão do tipo Time do banco acontece na infra.
+// O prazo vem do `period` (CONFIRMATION_DEADLINES), não do horário da refeição.
 export interface MealForConfirmation {
   id: string;
   date: Date;
   period: MealPeriod;
-  endTime: string;
   capacity: number;
 }
 

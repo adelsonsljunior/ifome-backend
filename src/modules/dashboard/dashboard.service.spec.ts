@@ -17,7 +17,10 @@ import {
   CONFIRMATION_USECASES,
   IConfirmationUseCases,
 } from '../confirmations/core/interfaces/primary/confirmation.use-cases.interface';
-import { MenuDayReadModel, MealView } from '../menu/core/domain/read-models/menu-day/menu-day.read-model';
+import {
+  MenuDayReadModel,
+  MealView,
+} from '../menu/core/domain/read-models/menu-day/menu-day.read-model';
 import { PaginationReadModel } from '../../shared/domain/read-models/pagination/pagination.read-model';
 import { StockItemBuilder } from '../stock/core/domain/entities/stock-item';
 
@@ -87,10 +90,7 @@ describe('DashboardService', () => {
     return new MenuDayReadModel(new Date('2026-07-01T00:00:00.000Z'), meals);
   }
 
-  function buildMealView(
-    capacity: number,
-    confirmedCount: number,
-  ): MealView {
+  function buildMealView(capacity: number, confirmedCount: number): MealView {
     return new MealView(
       'meal-1',
       'lunch',
@@ -123,18 +123,20 @@ describe('DashboardService', () => {
     return PaginationReadModel.create(items, 1, 1000, items.length);
   }
 
-  function setupDefaultMocks(overrides: {
-    menuToday?: MenuDayReadModel;
-    critItems?: ReturnType<typeof buildStockItem>[];
-    lowItems?: ReturnType<typeof buildStockItem>[];
-  } = {}) {
+  function setupDefaultMocks(
+    overrides: {
+      menuToday?: MenuDayReadModel;
+      critItems?: ReturnType<typeof buildStockItem>[];
+      lowItems?: ReturnType<typeof buildStockItem>[];
+    } = {},
+  ) {
     menuUseCases.getToday.mockResolvedValue(
       overrides.menuToday ?? buildMenuDay(),
     );
     alertUseCases.listAlerts.mockResolvedValue(emptyPage());
     stockUseCases.listItems
-      .mockResolvedValueOnce(pageOf(overrides.critItems ?? []))  // 'crit'
-      .mockResolvedValueOnce(pageOf(overrides.lowItems ?? []));  // 'low'
+      .mockResolvedValueOnce(pageOf(overrides.critItems ?? [])) // 'crit'
+      .mockResolvedValueOnce(pageOf(overrides.lowItems ?? [])); // 'low'
     alertUseCases.getDemand7Days.mockResolvedValue(emptyPage());
     confirmationUseCases.getRecent.mockResolvedValue(emptyPage());
   }
@@ -191,7 +193,11 @@ describe('DashboardService', () => {
 
       await service.getDashboard();
 
-      expect(confirmationUseCases.getRecent).toHaveBeenCalledWith(1, 5, 'newest');
+      expect(confirmationUseCases.getRecent).toHaveBeenCalledWith(
+        1,
+        5,
+        'newest',
+      );
     });
 
     it('deve ordenar itens em falta com críticos antes dos baixos', async () => {
@@ -233,10 +239,7 @@ describe('DashboardService', () => {
     });
 
     it('deve calcular stats corretamente com múltiplas refeições', async () => {
-      const meals = [
-        buildMealView(100, 80),
-        buildMealView(200, 50),
-      ];
+      const meals = [buildMealView(100, 80), buildMealView(200, 50)];
       setupDefaultMocks({ menuToday: buildMenuDay(meals) });
 
       const result = await service.getDashboard();

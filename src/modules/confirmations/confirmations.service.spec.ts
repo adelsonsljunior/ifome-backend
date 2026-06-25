@@ -115,11 +115,12 @@ describe('ConfirmationsService', () => {
     });
 
     it('should throw BadRequestException when the meal deadline has passed (deadline boundary check)', async () => {
+      // Lunch deadline is 10:00; move the clock just past it.
+      jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 10, 0, 1)));
       const meal: MealForConfirmation = {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '09:59', // deadline was 09:59, current time is 10:00
         capacity: 100,
       };
       confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
@@ -134,12 +135,12 @@ describe('ConfirmationsService', () => {
       );
     });
 
-    it('should NOT throw when current time matches the endTime exactly (deadline boundary check)', async () => {
+    it('should NOT throw when current time matches the deadline exactly (deadline boundary check)', async () => {
+      // Lunch deadline is 10:00 and the clock is exactly 10:00 -> still allowed.
       const meal: MealForConfirmation = {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '10:00', // deadline is 10:00, current time is 10:00
         capacity: 100,
       };
       const readModel = new ConfirmationReadModel(
@@ -166,7 +167,6 @@ describe('ConfirmationsService', () => {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '12:00', // deadline is 12:00, current time is 10:00
         capacity: 50,
       };
       confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
@@ -192,7 +192,6 @@ describe('ConfirmationsService', () => {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '12:00',
         capacity: 50,
       };
       const readModel = new ConfirmationReadModel(
@@ -252,7 +251,6 @@ describe('ConfirmationsService', () => {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '12:00',
         capacity: 100,
       };
       confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
@@ -269,6 +267,8 @@ describe('ConfirmationsService', () => {
     });
 
     it('should throw ConflictException when confirmation exists but meal deadline has passed', async () => {
+      // Lunch deadline is 10:00; move the clock just past it.
+      jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 10, 0, 1)));
       const confirmation = new ConfirmationReadModel(
         'conf-123',
         'meal-123',
@@ -281,7 +281,6 @@ describe('ConfirmationsService', () => {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '09:59', // deadline is 09:59, current time is 10:00
         capacity: 100,
       };
 
@@ -314,7 +313,6 @@ describe('ConfirmationsService', () => {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '12:00', // deadline is 12:00, current time is 10:00
         capacity: 100,
       };
 
@@ -395,30 +393,40 @@ describe('ConfirmationsService', () => {
 
     describe('deadlinePassed', () => {
       const mealDate = new Date(Date.UTC(2026, 5, 25)); // 2026-06-25 UTC
+      // Lunch deadline is fixed at 10:00 UTC (CONFIRMATION_DEADLINES).
       const meal: MealForConfirmation = {
         id: 'meal-123',
         date: mealDate,
         period: 'lunch',
-        endTime: '13:00', // deadline is 13:00 UTC
         capacity: 10,
       };
 
       it('should return true if current time is after the deadline', () => {
-        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 13, 0, 1))); // 13:00:01 UTC
+        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 10, 0, 1))); // 10:00:01 UTC
         const result = service['deadlinePassed'](meal);
         expect(result).toBe(true);
       });
 
       it('should return false if current time is exactly at the deadline', () => {
-        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 13, 0, 0))); // 13:00:00 UTC
+        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 10, 0, 0))); // 10:00:00 UTC
         const result = service['deadlinePassed'](meal);
         expect(result).toBe(false);
       });
 
       it('should return false if current time is before the deadline', () => {
-        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 12, 59, 59))); // 12:59:59 UTC
+        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 9, 59, 59))); // 09:59:59 UTC
         const result = service['deadlinePassed'](meal);
         expect(result).toBe(false);
+      });
+
+      it('uses the period-specific deadline (breakfast 05:30, dinner 16:00)', () => {
+        jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 6, 0, 0))); // 06:00 UTC
+        expect(
+          service['deadlinePassed']({ ...meal, period: 'breakfast' }),
+        ).toBe(true); // breakfast deadline 05:30 já passou
+        expect(service['deadlinePassed']({ ...meal, period: 'dinner' })).toBe(
+          false,
+        ); // dinner deadline 16:00 ainda não
       });
     });
   });

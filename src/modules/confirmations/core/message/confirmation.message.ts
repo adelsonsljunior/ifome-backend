@@ -24,3 +24,14 @@ export const MEAL_PERIODS: readonly MealPeriod[] = [
   'lunch',
   'dinner',
 ];
+
+// Prazo de confirmação por período: horário limite ('HH:mm' UTC) até o qual o
+// aluno pode confirmar/cancelar, sempre antes do início da refeição.
+//   café da manhã 07:00–08:00 -> até 05:30
+//   almoço        11:30–12:30 -> até 10:00
+//   jantar        18:00–19:00 -> até 16:00
+export const CONFIRMATION_DEADLINES: Record<MealPeriod, string> = {
+  breakfast: '05:30',
+  lunch: '10:00',
+  dinner: '16:00',
+};

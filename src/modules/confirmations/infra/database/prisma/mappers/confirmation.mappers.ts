@@ -5,13 +5,6 @@ import {
 } from '../../../../core/domain/entities/confirmation';
 import { MealForConfirmation } from '../../../../core/interfaces/secondary/confirmation.repository.interface';
 
-// Converte o tipo Time do Prisma (Date em 1970-01-01 UTC) -> 'HH:mm'.
-export function prismaTimeToString(time: Date): string {
-  const hours = String(time.getUTCHours()).padStart(2, '0');
-  const minutes = String(time.getUTCMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
 // Linha do Prisma da confirmação com a refeição incluída.
 export interface ConfirmationPrismaRow {
   id: string;
@@ -26,7 +19,6 @@ export interface MealPrismaRow {
   id: string;
   date: Date;
   period: MealPeriod;
-  endTime: Date;
   capacity: number;
 }
 
@@ -48,7 +40,6 @@ export class ConfirmationPrismaMapper {
       id: row.id,
       date: row.date,
       period: row.period,
-      endTime: prismaTimeToString(row.endTime),
       capacity: row.capacity,
     };
   }

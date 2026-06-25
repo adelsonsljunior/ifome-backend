@@ -23,7 +23,10 @@ import {
   MealForConfirmation,
   type IConfirmationRepository,
 } from './core/interfaces/secondary/confirmation.repository.interface';
-import { ConfirmationMessage } from './core/message/confirmation.message';
+import {
+  ConfirmationMessage,
+  CONFIRMATION_DEADLINES,
+} from './core/message/confirmation.message';
 
 @Injectable()
 export class ConfirmationsService implements IConfirmationUseCases {
@@ -132,9 +135,12 @@ export class ConfirmationsService implements IConfirmationUseCases {
     return PaginationReadModel.create(rows, page, pageSize, total);
   }
 
-  // Verdadeiro se o horário final da refeição (em UTC) já passou.
+  // Verdadeiro se o prazo de confirmação do período (em UTC) já passou.
+  // O prazo é fixo por período (CONFIRMATION_DEADLINES), sempre antes da refeição.
   private deadlinePassed(meal: MealForConfirmation): boolean {
-    const [hours, minutes] = meal.endTime.split(':').map(Number);
+    const [hours, minutes] = CONFIRMATION_DEADLINES[meal.period]
+      .split(':')
+      .map(Number);
     const deadline = new Date(
       Date.UTC(
         meal.date.getUTCFullYear(),

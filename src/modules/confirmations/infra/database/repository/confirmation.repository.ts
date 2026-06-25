@@ -40,7 +40,6 @@ export class ConfirmationRepository implements IConfirmationRepository {
         id: true,
         date: true,
         period: true,
-        endTime: true,
         capacity: true,
       },
     });

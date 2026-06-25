@@ -14,7 +14,10 @@ import {
   NOTIFICATION_ENGINE,
   INotificationEngine,
 } from '../notifications/core/interfaces/primary/notification-engine.interface';
-import { MenuDayReadModel, MealView } from './core/domain/read-models/menu-day/menu-day.read-model';
+import {
+  MenuDayReadModel,
+  MealView,
+} from './core/domain/read-models/menu-day/menu-day.read-model';
 import { DishBuilder } from './core/domain/entities/dish';
 import { MealBuilder } from './core/domain/entities/meal';
 import { MenuMessage } from './core/message/menu.message';
@@ -68,7 +71,11 @@ describe('MenuService', () => {
       .build();
   }
 
-  function buildMeal(overrides?: { id?: string; date?: Date; period?: 'breakfast' | 'lunch' | 'dinner' }) {
+  function buildMeal(overrides?: {
+    id?: string;
+    date?: Date;
+    period?: 'breakfast' | 'lunch' | 'dinner';
+  }) {
     return new MealBuilder()
       .withId(overrides?.id ?? 'meal-1')
       .withDate(overrides?.date ?? new Date('2099-12-31T00:00:00.000Z'))
@@ -107,7 +114,11 @@ describe('MenuService', () => {
   describe('getToday', () => {
     it('deve retornar o dia quando o repositório encontrar refeições hoje', async () => {
       const today = new Date(
-        Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
+        Date.UTC(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          new Date().getDate(),
+        ),
       );
       const day = new MenuDayReadModel(today, [
         new MealView('meal-1', 'lunch', '11:00', '13:00', 200, 80, []),
@@ -159,7 +170,11 @@ describe('MenuService', () => {
 
     it('deve inserir o dia com refeição na posição correta da semana', async () => {
       const today = new Date(
-        Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
+        Date.UTC(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          new Date().getDate(),
+        ),
       );
       const todayMenu = new MenuDayReadModel(today, [
         new MealView('meal-1', 'lunch', '11:00', '13:00', 200, 80, []),
@@ -205,8 +220,7 @@ describe('MenuService', () => {
       await service.getWeek();
 
       const [start, end] = menuRepository.findMenu.mock.calls[0];
-      const diff =
-        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+      const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
       expect(diff).toBe(6);
       expect(start.toISOString().slice(0, 10)).toBe(todayDateStr());
     });
@@ -289,9 +303,9 @@ describe('MenuService', () => {
     it('deve lançar NotFoundException com a mensagem correta', async () => {
       menuRepository.updateDish.mockResolvedValue(null);
 
-      await expect(
-        service.updateDish('id-inexistente', {}),
-      ).rejects.toThrow(MenuMessage.DISH_NOT_FOUND);
+      await expect(service.updateDish('id-inexistente', {})).rejects.toThrow(
+        MenuMessage.DISH_NOT_FOUND,
+      );
     });
   });
 
@@ -359,17 +373,17 @@ describe('MenuService', () => {
       // Repositório retorna 0 pratos para 1 dishId solicitado
       menuRepository.findDishesByIds.mockResolvedValue([]);
 
-      await expect(
-        service.createMeal(validCreateMealData()),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createMeal(validCreateMealData())).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('deve lançar BadRequestException com a mensagem correta para prato inexistente', async () => {
       menuRepository.findDishesByIds.mockResolvedValue([]);
 
-      await expect(
-        service.createMeal(validCreateMealData()),
-      ).rejects.toThrow(MenuMessage.DISHES_NOT_FOUND);
+      await expect(service.createMeal(validCreateMealData())).rejects.toThrow(
+        MenuMessage.DISHES_NOT_FOUND,
+      );
     });
 
     it('deve lançar BadRequestException quando apenas parte dos pratos existir', async () => {
@@ -383,7 +397,9 @@ describe('MenuService', () => {
       };
       menuRepository.findDishesByIds.mockResolvedValue([buildDish('dish-1')]);
 
-      await expect(service.createMeal(data)).rejects.toThrow(BadRequestException);
+      await expect(service.createMeal(data)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('deve lançar ConflictException quando já existir refeição no período', async () => {
@@ -391,18 +407,18 @@ describe('MenuService', () => {
       menuRepository.findDishesByIds.mockResolvedValue([buildDish()]);
       menuRepository.findMealByDateAndPeriod.mockResolvedValue(existingMeal);
 
-      await expect(
-        service.createMeal(validCreateMealData()),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.createMeal(validCreateMealData())).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('deve lançar ConflictException com a mensagem correta', async () => {
       menuRepository.findDishesByIds.mockResolvedValue([buildDish()]);
       menuRepository.findMealByDateAndPeriod.mockResolvedValue(buildMeal());
 
-      await expect(
-        service.createMeal(validCreateMealData()),
-      ).rejects.toThrow(MenuMessage.MEAL_ALREADY_EXISTS);
+      await expect(service.createMeal(validCreateMealData())).rejects.toThrow(
+        MenuMessage.MEAL_ALREADY_EXISTS,
+      );
     });
 
     it('deve criar a refeição e retorná-la quando tudo for válido', async () => {
@@ -557,9 +573,9 @@ describe('MenuService', () => {
     it('deve lançar NotFoundException com a mensagem correta', async () => {
       menuRepository.updateMeal.mockResolvedValue(null);
 
-      await expect(
-        service.updateMeal('id-inexistente', {}),
-      ).rejects.toThrow(MenuMessage.MEAL_NOT_FOUND);
+      await expect(service.updateMeal('id-inexistente', {})).rejects.toThrow(
+        MenuMessage.MEAL_NOT_FOUND,
+      );
     });
 
     it('deve validar existência dos pratos quando dishes for informado', async () => {
