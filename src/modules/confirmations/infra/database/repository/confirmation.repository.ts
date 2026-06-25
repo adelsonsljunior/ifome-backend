@@ -94,6 +94,17 @@ export class ConfirmationRepository implements IConfirmationRepository {
     return row ? ConfirmationPrismaMapper.toReadModel(row) : null;
   }
 
+  async findByUserAndMeal(
+    userId: string,
+    mealId: string,
+  ): Promise<ConfirmationReadModel | null> {
+    const row = await this.prisma.confirmation.findFirst({
+      where: { userId, mealId, canceledAt: null },
+      select: CONFIRMATION_SELECT,
+    });
+    return row ? ConfirmationPrismaMapper.toReadModel(row) : null;
+  }
+
   async deleteById(id: string): Promise<void> {
     await this.prisma.confirmation.delete({ where: { id } });
   }

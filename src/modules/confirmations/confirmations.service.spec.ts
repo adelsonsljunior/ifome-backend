@@ -28,6 +28,7 @@ describe('ConfirmationsService', () => {
       countByMeal: jest.fn(),
       upsert: jest.fn(),
       findByUserAndDate: jest.fn(),
+      findByUserAndMeal: jest.fn(),
       deleteById: jest.fn(),
       findRecent: jest.fn(),
     };
@@ -223,19 +224,46 @@ describe('ConfirmationsService', () => {
 
   describe('cancelToday', () => {
     const userId = 'user-123';
+    const period = 'lunch' as const;
     const mealDate = new Date(Date.UTC(2026, 5, 25));
 
     beforeEach(() => {
       jest.setSystemTime(new Date(Date.UTC(2026, 5, 25, 10, 0, 0)));
     });
 
-    it('should throw NotFoundException when no confirmation is found today', async () => {
-      confirmationRepositoryMock.findByUserAndDate.mockResolvedValue(null);
+    it('should throw NotFoundException when no meal exists today for the given period', async () => {
+      confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
+        null,
+      );
 
-      await expect(service.cancelToday(userId)).rejects.toThrow(
+      await expect(service.cancelToday(userId, period)).rejects.toThrow(
         NotFoundException,
       );
-      await expect(service.cancelToday(userId)).rejects.toThrow(
+      await expect(service.cancelToday(userId, period)).rejects.toThrow(
+        ConfirmationMessage.NO_CONFIRMATION_TODAY,
+      );
+      expect(
+        confirmationRepositoryMock.findByUserAndMeal,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when there is no confirmation for the meal', async () => {
+      const meal: MealForConfirmation = {
+        id: 'meal-123',
+        date: mealDate,
+        period: 'lunch',
+        endTime: '12:00',
+        capacity: 100,
+      };
+      confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
+        meal,
+      );
+      confirmationRepositoryMock.findByUserAndMeal.mockResolvedValue(null);
+
+      await expect(service.cancelToday(userId, period)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.cancelToday(userId, period)).rejects.toThrow(
         ConfirmationMessage.NO_CONFIRMATION_TODAY,
       );
     });
@@ -257,22 +285,23 @@ describe('ConfirmationsService', () => {
         capacity: 100,
       };
 
-      confirmationRepositoryMock.findByUserAndDate.mockResolvedValue(
-        confirmation,
-      );
       confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
         meal,
       );
+      confirmationRepositoryMock.findByUserAndMeal.mockResolvedValue(
+        confirmation,
+      );
 
-      await expect(service.cancelToday(userId)).rejects.toThrow(
+      await expect(service.cancelToday(userId, period)).rejects.toThrow(
         ConflictException,
       );
-      await expect(service.cancelToday(userId)).rejects.toThrow(
+      await expect(service.cancelToday(userId, period)).rejects.toThrow(
         ConfirmationMessage.DEADLINE_PASSED,
       );
+      expect(confirmationRepositoryMock.deleteById).not.toHaveBeenCalled();
     });
 
-    it('should succeed, delete confirmation when deadline has not passed', async () => {
+    it('should cancel the confirmation of the given period when deadline has not passed', async () => {
       const confirmation = new ConfirmationReadModel(
         'conf-123',
         'meal-123',
@@ -289,41 +318,23 @@ describe('ConfirmationsService', () => {
         capacity: 100,
       };
 
-      confirmationRepositoryMock.findByUserAndDate.mockResolvedValue(
-        confirmation,
-      );
       confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
         meal,
       );
-      confirmationRepositoryMock.deleteById.mockResolvedValue(undefined);
-
-      await service.cancelToday(userId);
-
-      expect(confirmationRepositoryMock.deleteById).toHaveBeenCalledWith(
-        'conf-123',
-      );
-    });
-
-    it('should succeed, delete confirmation when meal is not found', async () => {
-      const confirmation = new ConfirmationReadModel(
-        'conf-123',
-        'meal-123',
-        mealDate,
-        'lunch',
-        'standard',
-        new Date(),
-      );
-
-      confirmationRepositoryMock.findByUserAndDate.mockResolvedValue(
+      confirmationRepositoryMock.findByUserAndMeal.mockResolvedValue(
         confirmation,
       );
-      confirmationRepositoryMock.findMealByDateAndPeriod.mockResolvedValue(
-        null,
-      );
       confirmationRepositoryMock.deleteById.mockResolvedValue(undefined);
 
-      await service.cancelToday(userId);
+      await service.cancelToday(userId, period);
 
+      expect(
+        confirmationRepositoryMock.findMealByDateAndPeriod,
+      ).toHaveBeenCalledWith(service['todayUtc'](), period);
+      expect(confirmationRepositoryMock.findByUserAndMeal).toHaveBeenCalledWith(
+        userId,
+        'meal-123',
+      );
       expect(confirmationRepositoryMock.deleteById).toHaveBeenCalledWith(
         'conf-123',
       );

@@ -21,7 +21,7 @@ export type RecentConfirmationsOrder = 'newest' | 'oldest';
 export interface IConfirmationUseCases {
   getToday(userId: string): Promise<ConfirmationReadModel | null>;
   confirm(userId: string, data: ConfirmData): Promise<ConfirmationReadModel>;
-  cancelToday(userId: string): Promise<void>;
+  cancelToday(userId: string, period: MealPeriod): Promise<void>;
   getRecent(
     page: number,
     pageSize: number,

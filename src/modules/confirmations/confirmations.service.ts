@@ -6,7 +6,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfirmationBuilder } from './core/domain/entities/confirmation';
+import {
+  ConfirmationBuilder,
+  MealPeriod,
+} from './core/domain/entities/confirmation';
 import { ConfirmationReadModel } from './core/domain/read-models/confirmation/confirmation.read-model';
 import { RecentConfirmationReadModel } from './core/domain/read-models/recent-confirmation/recent-confirmation.read-model';
 import { PaginationReadModel } from '../../shared/domain/read-models/pagination/pagination.read-model';
@@ -80,22 +83,32 @@ export class ConfirmationsService implements IConfirmationUseCases {
     return this.confirmationRepository.upsert(confirmation);
   }
 
-  async cancelToday(userId: string): Promise<void> {
+  async cancelToday(userId: string, period: MealPeriod): Promise<void> {
     const today = this.todayUtc();
-    const confirmation = await this.confirmationRepository.findByUserAndDate(
-      userId,
+    // Sem refeição neste período hoje não há confirmação possível para cancelar.
+    const meal = await this.confirmationRepository.findMealByDateAndPeriod(
       today,
+      period,
     );
-    if (!confirmation) {
-      this.logger.warn(`No confirmation today to cancel (user ${userId})`);
+    if (!meal) {
+      this.logger.warn(
+        `No meal today for period ${period}, nothing to cancel (user ${userId})`,
+      );
       throw new NotFoundException(ConfirmationMessage.NO_CONFIRMATION_TODAY);
     }
 
-    const meal = await this.confirmationRepository.findMealByDateAndPeriod(
-      today,
-      confirmation.mealPeriod,
+    const confirmation = await this.confirmationRepository.findByUserAndMeal(
+      userId,
+      meal.id,
     );
-    if (meal && this.deadlinePassed(meal)) {
+    if (!confirmation) {
+      this.logger.warn(
+        `No confirmation for meal ${meal.id} to cancel (user ${userId})`,
+      );
+      throw new NotFoundException(ConfirmationMessage.NO_CONFIRMATION_TODAY);
+    }
+
+    if (this.deadlinePassed(meal)) {
       this.logger.warn(
         `Deadline passed, cannot cancel confirmation ${confirmation.id} (user ${userId})`,
       );

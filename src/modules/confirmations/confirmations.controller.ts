@@ -34,6 +34,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { ApiPaginatedResponse } from '../../common/swagger/api-paginated-response.decorator';
 import { CreateConfirmationDto } from './api/dto/requests/create-confirmation.dto';
+import { CancelConfirmationQueryDto } from './api/dto/requests/cancel-confirmation-query.dto';
 import { RecentConfirmationsQueryDto } from './api/dto/requests/recent-confirmations-query.dto';
 import { ConfirmationResponseDto } from './api/dto/responses/confirmation-response.dto';
 import { RecentConfirmationResponseDto } from './api/dto/responses/recent-confirmation-response.dto';
@@ -92,13 +93,21 @@ export class ConfirmationsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('STUDENT')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Cancela a confirmação do aluno para hoje' })
+  @ApiOperation({
+    summary: 'Cancela a confirmação do aluno para a refeição de hoje',
+  })
   @ApiNoContentResponse({ description: 'Confirmação cancelada' })
+  @ApiBadRequestResponse({ description: 'Período inválido' })
   @ApiForbiddenResponse({ description: 'Acesso restrito a alunos' })
-  @ApiNotFoundResponse({ description: 'Sem confirmação para hoje' })
+  @ApiNotFoundResponse({
+    description: 'Sem confirmação para esta refeição hoje',
+  })
   @ApiConflictResponse({ description: 'Prazo de cancelamento encerrado' })
-  async cancelToday(@CurrentUser() user: AuthenticatedUser): Promise<void> {
-    await this.confirmationUseCases.cancelToday(user.id);
+  async cancelToday(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: CancelConfirmationQueryDto,
+  ): Promise<void> {
+    await this.confirmationUseCases.cancelToday(user.id, query.period);
   }
 
   @Get('recent')

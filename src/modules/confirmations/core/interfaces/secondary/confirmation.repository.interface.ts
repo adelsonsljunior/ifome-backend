@@ -41,6 +41,12 @@ export interface IConfirmationRepository {
     date: Date,
   ): Promise<ConfirmationReadModel | null>;
 
+  // Confirmação ativa do aluno em uma refeição específica (ou null).
+  findByUserAndMeal(
+    userId: string,
+    mealId: string,
+  ): Promise<ConfirmationReadModel | null>;
+
   // Remove a confirmação (cancelamento = hard delete).
   deleteById(id: string): Promise<void>;
 
