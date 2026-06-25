@@ -76,7 +76,7 @@ describe('NotificationsService', () => {
       );
       expect(result.data).toEqual([notification]);
       expect(result.total).toBe(12);
-      expect(result.totalPages).toBe(3); 
+      expect(result.totalPages).toBe(3);
     });
   });
 
@@ -86,9 +86,7 @@ describe('NotificationsService', () => {
 
       const result = await service.unreadCount('user-1');
 
-      expect(notificationRepository.countUnread).toHaveBeenCalledWith(
-        'user-1',
-      );
+      expect(notificationRepository.countUnread).toHaveBeenCalledWith('user-1');
       expect(result).toBe(7);
     });
   });
@@ -127,9 +125,7 @@ describe('NotificationsService', () => {
 
       await service.markAllRead('user-1');
 
-      expect(notificationRepository.markAllRead).toHaveBeenCalledWith(
-        'user-1',
-      );
+      expect(notificationRepository.markAllRead).toHaveBeenCalledWith('user-1');
     });
   });
   describe('notifyUser', () => {
