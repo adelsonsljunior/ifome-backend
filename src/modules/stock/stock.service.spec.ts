@@ -168,4 +168,81 @@ describe('StockService', () => {
       await expect(service.createItem(invalidData)).rejects.toThrow();
     });
   });
+  describe('updateItem', () => {
+    it('deve atualizar quando os novos limites são válidos', async () => {
+      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      stockRepository.findItemById.mockResolvedValue(existing);
+      stockRepository.updateItem.mockResolvedValue(existing);
+
+      await service.updateItem('item-1', { minQuantity: 20 });
+
+      expect(stockRepository.updateItem).toHaveBeenCalledWith('item-1', {
+        minQuantity: 20,
+      });
+    });
+
+    it('deve lançar NotFoundException quando o item não existir', async () => {
+      stockRepository.findItemById.mockResolvedValue(null);
+
+      await expect(
+        service.updateItem('id-inexistente', { minQuantity: 20 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve lançar BadRequestException quando minQuantity >= maxQuantity', async () => {
+      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      stockRepository.findItemById.mockResolvedValue(existing);
+
+      await expect(
+        service.updateItem('item-1', { minQuantity: 100, maxQuantity: 100 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve lançar BadRequestException com a mensagem de min/max inválido', async () => {
+      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      stockRepository.findItemById.mockResolvedValue(existing);
+
+      await expect(
+        service.updateItem('item-1', { minQuantity: 150 }),
+      ).rejects.toThrow(StockMessage.INVALID_MIN_MAX);
+    });
+
+    it('deve lançar BadRequestException quando o novo range quebra mín < atual < máx', async () => {
+      // currentQuantity é 50; se o novo minQuantity subir para 60, 50 < 60 é falso.
+      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      stockRepository.findItemById.mockResolvedValue(existing);
+
+      await expect(
+        service.updateItem('item-1', { minQuantity: 60 }),
+      ).rejects.toThrow(StockMessage.INVALID_QUANTITY_RANGE);
+    });
+
+    it('deve lançar NotFoundException quando o repositório não encontrar o item ao salvar', async () => {
+      const existing = buildItem({ currentQuantity: 50, minQuantity: 10, maxQuantity: 100 });
+      stockRepository.findItemById.mockResolvedValue(existing);
+      stockRepository.updateItem.mockResolvedValue(null);
+
+      await expect(
+        service.updateItem('item-1', { minQuantity: 20 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deleteItem', () => {
+    it('deve excluir com sucesso quando o item existir', async () => {
+      stockRepository.deleteItem.mockResolvedValue(true);
+
+      await service.deleteItem('item-1');
+
+      expect(stockRepository.deleteItem).toHaveBeenCalledWith('item-1');
+    });
+
+    it('deve lançar NotFoundException quando o item não existir', async () => {
+      stockRepository.deleteItem.mockResolvedValue(false);
+
+      await expect(service.deleteItem('id-inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });
