@@ -11,8 +11,8 @@ import {
 } from '../src/generated/prisma/client';
 
 // Seed idempotente: cria admins e alunos de teste (com restrições alimentares),
-// um catálogo de pratos, cardápios (passado p/ histórico e próximos dias p/ a
-// rota /menu/week) com seus pratos, confirmações e o histórico de refeições.
+// um catálogo de pratos, cardápios (hoje, amanhã e a próxima semana — 29/06 a
+// 03/07) com seus pratos, confirmações e o histórico de refeições.
 // Como não há endpoint de cadastro, este seed é a única origem de usuários.
 const SALT_ROUNDS = 10;
 const DEFAULT_PASSWORD = '12345678';
@@ -290,20 +290,26 @@ interface MealSpec {
   dishes: string[];
 }
 
-// Cardápios de -2 a +5 dias: passado alimenta o histórico; hoje e os próximos
-// dias alimentam /menu/today e /menu/week (que cobre hoje..hoje+6).
+// Datas semeadas: hoje e amanhã (relativos ao dia da execução, p/ /menu/today
+// e /menu/week) + a próxima semana útil, 29/06 a 03/07/2026 (datas fixas).
 function buildMealSeeds(): MealSpec[] {
-  const base = new Date();
-  base.setUTCHours(0, 0, 0, 0);
-  const dayAt = (offset: number) => {
-    const date = new Date(base);
-    date.setUTCDate(date.getUTCDate() + offset);
-    return date;
-  };
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+  const nextWeek = [
+    new Date('2026-06-29T00:00:00Z'),
+    new Date('2026-06-30T00:00:00Z'),
+    new Date('2026-07-01T00:00:00Z'),
+    new Date('2026-07-02T00:00:00Z'),
+    new Date('2026-07-03T00:00:00Z'),
+  ];
+
+  const dates = [today, tomorrow, ...nextWeek];
 
   const specs: MealSpec[] = [];
-  for (let offset = -2; offset <= 5; offset++) {
-    const date = dayAt(offset);
+  dates.forEach((date, index) => {
     // Almoço todos os dias, alternando os combos.
     specs.push({
       date,
@@ -311,20 +317,18 @@ function buildMealSeeds(): MealSpec[] {
       startTime: LUNCH_START,
       endTime: LUNCH_END,
       capacity: 200,
-      dishes: LUNCH_COMBOS[(offset + 2) % LUNCH_COMBOS.length],
+      dishes: LUNCH_COMBOS[index % LUNCH_COMBOS.length],
     });
-    // Jantar (vegetariano) em hoje e nos dois próximos dias.
-    if (offset >= 0 && offset <= 2) {
-      specs.push({
-        date,
-        period: MealPeriod.dinner,
-        startTime: DINNER_START,
-        endTime: DINNER_END,
-        capacity: 150,
-        dishes: COMBO_VEG,
-      });
-    }
-  }
+    // Jantar (vegetariano) todos os dias.
+    specs.push({
+      date,
+      period: MealPeriod.dinner,
+      startTime: DINNER_START,
+      endTime: DINNER_END,
+      capacity: 150,
+      dishes: COMBO_VEG,
+    });
+  });
   return specs;
 }
 
